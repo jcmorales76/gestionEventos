@@ -1,9 +1,13 @@
 import { useState } from "react";
+import ModalNuevoUsuario from "../components/modals/ModalNuevoUsuario";
 
 export default function Usuarios() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRol, setFilterRol] = useState("Todos");
   const [filterEstado, setFilterEstado] = useState("Todos");
+
+  // Estado para el modal
+  const [modalUsuarioOpen, setModalUsuarioOpen] = useState(false);
 
   const usuarios = [
     {
@@ -39,28 +43,6 @@ export default function Usuarios() {
       ultimoAcceso: "Hace 5 días",
       avatar: "RD",
     },
-    {
-      id: 4,
-      nombre: "María",
-      apellido: "González",
-      email: "maria.gonzalez@email.com",
-      rol: "Participante",
-      estado: "Activo",
-      creado: "20 May 2026",
-      ultimoAcceso: "Ayer",
-      avatar: "MG",
-    },
-    {
-      id: 5,
-      nombre: "Luis",
-      apellido: "Fernández",
-      email: "luis.fernandez@email.com",
-      rol: "Administrador",
-      estado: "Activo",
-      creado: "02 Feb 2026",
-      ultimoAcceso: "Hace 1 hora",
-      avatar: "LF",
-    },
   ];
 
   const usuariosFiltrados = usuarios.filter((user) => {
@@ -86,26 +68,18 @@ export default function Usuarios() {
             Administra administradores y participantes del sistema
           </p>
         </div>
-        <button className="btn-primary">+ Nuevo Usuario</button>
+        <button
+          onClick={() => setModalUsuarioOpen(true)}
+          className="btn-primary"
+        >
+          + Nuevo Usuario
+        </button>
       </div>
 
       {/* Filtros */}
       <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
-            <svg
-              className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
             <input
               type="text"
               placeholder="Buscar por nombre o correo..."
@@ -142,6 +116,7 @@ export default function Usuarios() {
             <thead className="table-header">
               <tr>
                 <th className="table-th">Usuario</th>
+                <th className="table-th">Correo</th>
                 <th className="table-th">Rol</th>
                 <th className="table-th">Estado</th>
                 <th className="table-th">Creado</th>
@@ -171,6 +146,9 @@ export default function Usuarios() {
                     </div>
                   </td>
                   <td className="table-td">
+                    <span className="text-sm text-gray-900">{user.email}</span>
+                  </td>
+                  <td className="table-td">
                     <span
                       className={`badge ${user.rol === "Administrador" ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"}`}
                     >
@@ -194,65 +172,14 @@ export default function Usuarios() {
                   </td>
                   <td className="table-td">
                     <div className="flex items-center gap-2">
-                      <button
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Ver detalles"
-                      >
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                          />
-                        </svg>
+                      <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                        👁️
                       </button>
-                      <button
-                        className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                        title="Editar"
-                      >
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                          />
-                        </svg>
+                      <button className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
+                        ✏️
                       </button>
-                      <button
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Eliminar"
-                      >
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
+                      <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                        🗑️
                       </button>
                     </div>
                   </td>
@@ -262,6 +189,16 @@ export default function Usuarios() {
           </table>
         </div>
       </div>
+
+      {/* MODAL INTEGRADO */}
+      <ModalNuevoUsuario
+        isOpen={modalUsuarioOpen}
+        onClose={() => setModalUsuarioOpen(false)}
+        onSave={(data) => {
+          console.log("Usuario guardado:", data);
+          setModalUsuarioOpen(false);
+        }}
+      />
     </div>
   );
 }

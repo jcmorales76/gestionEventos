@@ -4,6 +4,7 @@ import {
   Route,
   Navigate,
   Outlet,
+  Link,
 } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import { useTheme } from "./contexts/ThemeContext";
@@ -18,8 +19,9 @@ import Materiales from "./pages/Materiales";
 import Certificados from "./pages/Certificados";
 import Usuarios from "./pages/Usuarios";
 import Reportes from "./pages/Reportes";
+import Importacion from "./pages/Importacion";
 
-// Layouts
+// Layouts y Portal Participante
 import ParticipantLayout from "./layouts/ParticipantLayout";
 import MisEventos from "./pages/MisEventos";
 import MisMateriales from "./pages/MisMateriales";
@@ -35,7 +37,7 @@ const PrivateLayout = () => {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Sidebar - Verifica que los href coincidan con las rutas */}
+      {/* Sidebar - Usando Link de React Router */}
       <aside
         style={{ backgroundColor: theme.sidebarBg }}
         className="w-60 flex-shrink-0 hidden md:flex flex-col text-white transition-all duration-300"
@@ -53,29 +55,32 @@ const PrivateLayout = () => {
           </div>
         </div>
 
-        {/* Navegación - Los href deben coincidir EXACTAMENTE con las rutas */}
+        {/* Navegación - Usando Link en lugar de <a> */}
         <nav className="flex-1 px-3 space-y-1 mt-4">
-          <a href="/dashboard" className="sidebar-link">
+          <Link to="/dashboard" className="sidebar-link">
             Dashboard
-          </a>
-          <a href="/eventos" className="sidebar-link">
+          </Link>
+          <Link to="/eventos" className="sidebar-link">
             Eventos
-          </a>
-          <a href="/participantes" className="sidebar-link">
+          </Link>
+          <Link to="/participantes" className="sidebar-link">
             Participantes
-          </a>
-          <a href="/materiales" className="sidebar-link">
+          </Link>
+          <Link to="/materiales" className="sidebar-link">
             Materiales
-          </a>
-          <a href="/certificados" className="sidebar-link">
+          </Link>
+          <Link to="/certificados" className="sidebar-link">
             Certificados
-          </a>
-          <a href="/usuarios" className="sidebar-link">
+          </Link>
+          <Link to="/usuarios" className="sidebar-link">
             Usuarios
-          </a>
-          <a href="/reportes" className="sidebar-link">
+          </Link>
+          <Link to="/reportes" className="sidebar-link">
             Reportes
-          </a>
+          </Link>
+          <Link to="/importacion" className="sidebar-link">
+            Importación Masiva
+          </Link>
         </nav>
 
         {/* Usuario */}
@@ -133,6 +138,7 @@ function App() {
           <Route path="/certificados" element={<Certificados />} />
           <Route path="/usuarios" element={<Usuarios />} />
           <Route path="/reportes" element={<Reportes />} />
+          <Route path="/importacion" element={<Importacion />} />
         </Route>
 
         {/* Rutas del Portal de Participantes */}
