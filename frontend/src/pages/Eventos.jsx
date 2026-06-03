@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { toast } from "react-hot-toast"; // Importar toast para notificaciones
 import ModalNuevoEvento from "../components/modals/ModalNuevoEvento";
 import ModalDetalleEvento from "../components/modals/ModalDetalleEvento";
 
@@ -6,108 +7,98 @@ export default function Eventos() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterTipo, setFilterTipo] = useState("Todos");
   const [filterEstado, setFilterEstado] = useState("Todos");
+  const [eventos, setEventos] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Estados para los modales
+  // Estados para modales
   const [modalNuevoOpen, setModalNuevoOpen] = useState(false);
   const [modalDetalleOpen, setModalDetalleOpen] = useState(false);
   const [eventoSeleccionado, setEventoSeleccionado] = useState(null);
 
-  const eventos = [
-    {
-      id: 1,
-      nombre: "Curso de Liderazgo Ejecutivo",
-      tipo: "Curso",
-      fecha: "10 jun. 2026",
-      lugar: "Lima, Perú",
-      expositor: "Dr. Carlos Mendoza",
-      inscritos: 24,
-      capacidad: 30,
-      estado: "Activo",
-      color: "border-purple-500",
-      bgBadge: "bg-purple-100 text-purple-700",
-      barColor: "bg-purple-500",
-    },
-    {
-      id: 2,
-      nombre: "Seminario de Innovación Digital",
-      tipo: "Seminario",
-      fecha: "20 jul. 2026",
-      lugar: "Virtual (Zoom)",
-      expositor: "Ing. Ana Torres",
-      inscritos: 38,
-      capacidad: 50,
-      estado: "Próximo",
-      color: "border-red-500",
-      bgBadge: "bg-red-100 text-red-700",
-      barColor: "bg-red-500",
-    },
-    {
-      id: 3,
-      nombre: "Taller de Negociación Avanzada",
-      tipo: "Taller",
-      fecha: "01 jun. 2026",
-      lugar: "Lima, Perú",
-      expositor: "Lic. Roberto Díaz",
-      inscritos: 18,
-      capacidad: 20,
-      estado: "Activo",
-      color: "border-blue-900",
-      bgBadge: "bg-blue-100 text-blue-700",
-      barColor: "bg-blue-900",
-    },
-    {
-      id: 4,
-      nombre: "Congreso Internacional de Finanzas",
-      tipo: "Congreso",
-      fecha: "05 ago. 2026",
-      lugar: "Centro de Convenciones",
-      expositor: "Múltiples Ponentes",
-      inscritos: 145,
-      capacidad: 200,
-      estado: "Próximo",
-      color: "border-orange-500",
-      bgBadge: "bg-orange-100 text-orange-700",
-      barColor: "bg-orange-500",
-    },
-    {
-      id: 5,
-      nombre: "Programa Alta Dirección MBA",
-      tipo: "Programa de Alta Dirección",
-      fecha: "15 ene. 2027",
-      lugar: "Lima / Virtual",
-      expositor: "MBA Faculty",
-      inscritos: 25,
-      capacidad: 40,
-      estado: "Próximo",
-      color: "border-green-500",
-      bgBadge: "bg-green-100 text-green-700",
-      barColor: "bg-green-500",
-    },
-    {
-      id: 6,
-      nombre: "Taller de Excel Avanzado",
-      tipo: "Taller",
-      fecha: "01 mar. 2026",
-      lugar: "Virtual (Teams)",
-      expositor: "Prof. María Sánchez",
-      inscritos: 30,
-      capacidad: 30,
-      estado: "Finalizado",
-      color: "border-teal-500",
-      bgBadge: "bg-teal-100 text-teal-700",
-      barColor: "bg-teal-500",
-    },
-  ];
+  // Cargar eventos al montar el componente
+  useEffect(() => {
+    fetchEventos();
+  }, []);
 
-  const eventosFiltrados = eventos.filter((evento) => {
-    const matchSearch =
-      evento.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      evento.expositor.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchTipo = filterTipo === "Todos" || evento.tipo === filterTipo;
-    const matchEstado =
-      filterEstado === "Todos" || evento.estado === filterEstado;
-    return matchSearch && matchTipo && matchEstado;
-  });
+  const fetchEventos = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("http://localhost:5000/api/eventos");
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Transformar datos de la BD al formato visual del frontend
+      const eventosFormateados = data.map((evento) => ({
+        id: evento.id,
+        nombre: evento.nombre,
+        tipo: evento.tipo || "Curso",
+        fecha: formatoFecha(evento.fecha_inicio),
+        lugar: evento.lugar || "Por definir",
+        expositor: evento.expositor || "Por definir",
+        inscritos: evento.inscritos || 0,
+        capacidad: evento.capacidad || 0,
+        estado: evento.estado || "Próximo",
+        color: getColorClass(evento.color),
+        bgBadge: getBgBadgeClass(evento.tipo),
+        barColor: getColorClass(evento.color),
+        // Datos completos para el modal
+        descripcion: evento.descripcion,
+        fecha_inicio: evento.fecha_inicio,
+        fecha_fin: evento.fecha_fin,
+        hora_inicio: evento.hora_inicio,
+        horas_academicas: evento.horas_academicas,
+        instructor: evento.instructor,
+        colorHex: evento.color,
+      }));
+
+      setEventos(eventosFormateados);
+    } catch (error) {
+      console.error("Error cargando eventos:", error);
+      // Si falla la API, no mostramos nada o podrías usar datos de prueba
+      setEventos([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- Funciones Auxiliares ---
+
+  const formatoFecha = (fechaString) => {
+    if (!fechaString) return "Por definir";
+    const fecha = new Date(fechaString);
+    return fecha.toLocaleDateString("es-ES", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const getColorClass = (color) => {
+    const colorMap = {
+      "#9333ea": "border-purple-500",
+      "#dc2626": "border-red-500",
+      "#1e3a8a": "border-blue-900",
+      "#f97316": "border-orange-500",
+      "#22c55e": "border-green-500",
+      "#14b8a6": "border-teal-500",
+    };
+    return colorMap[color] || "border-red-500";
+  };
+
+  const getBgBadgeClass = (tipo) => {
+    const map = {
+      Curso: "bg-purple-100 text-purple-700",
+      Seminario: "bg-red-100 text-red-700",
+      Taller: "bg-blue-100 text-blue-700",
+      Congreso: "bg-orange-100 text-orange-700",
+      "Programa de Alta Dirección": "bg-green-100 text-green-700",
+    };
+    return map[tipo] || "bg-gray-100 text-gray-700";
+  };
 
   const getEstadoBadge = (estado) => {
     switch (estado) {
@@ -122,16 +113,105 @@ export default function Eventos() {
     }
   };
 
-  // Handlers para modales
+  // --- Filtros ---
+  const eventosFiltrados = eventos.filter((evento) => {
+    const matchSearch =
+      evento.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (evento.expositor &&
+        evento.expositor.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchTipo = filterTipo === "Todos" || evento.tipo === filterTipo;
+    const matchEstado =
+      filterEstado === "Todos" || evento.estado === filterEstado;
+    return matchSearch && matchTipo && matchEstado;
+  });
+
+  // --- Handlers ---
+
   const handleVerDetalle = (evento) => {
     setEventoSeleccionado(evento);
     setModalDetalleOpen(true);
   };
 
-  const handleNuevoEvento = (data) => {
-    console.log("Nuevo evento guardado:", data);
-    // Aquí se conectará con el backend: axios.post('/api/eventos', data)
+  // CREAR EVENTO
+  const handleNuevoEvento = async (data) => {
+    try {
+      const payload = {
+        nombre: data.nombre,
+        tipo: data.tipo,
+        estado: data.estado,
+        descripcion: data.descripcion || "",
+        fecha_inicio: data.fechaInicio || null,
+        fecha_fin: data.fechaFin || null,
+        hora_inicio: data.horaInicio || null,
+        capacidad: parseInt(data.capacidad) || 0,
+        lugar: data.lugar || "",
+        expositor: data.expositor || "",
+        color: data.color || "#dc2626",
+        horas_academicas: parseInt(data.horas) || 0,
+        instructor: data.instructor || "",
+      };
+
+      const response = await fetch("http://localhost:5000/api/eventos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        // 1. Cerrar modal inmediatamente
+        setModalNuevoOpen(false);
+
+        // 2. Mostrar notificación bonita
+        toast.success("✅ Evento creado exitosamente");
+
+        // 3. Recargar la lista de eventos
+        await fetchEventos();
+      } else {
+        toast.error(" Error al crear el evento");
+      }
+    } catch (error) {
+      console.error("Error de conexión:", error);
+      toast.error("Error de conexión con el servidor");
+    }
   };
+
+  // ELIMINAR EVENTO
+  const handleEliminar = async (id) => {
+    if (
+      !window.confirm(
+        "¿Estás seguro de eliminar este evento? Esta acción no se puede deshacer.",
+      )
+    )
+      return;
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/eventos/${id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        toast.success("Evento eliminado correctamente");
+        setEventos(eventos.filter((e) => e.id !== id)); // Actualizar UI localmente
+      } else {
+        toast.error("Error al eliminar el evento");
+      }
+    } catch (error) {
+      toast.error("Error de conexión al eliminar");
+    }
+  };
+
+  // --- Renderizado ---
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+        <span className="ml-3 text-gray-600 font-medium">
+          Cargando eventos...
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -307,7 +387,7 @@ export default function Eventos() {
                   <div
                     className={`h-full ${evento.barColor} rounded-full transition-all duration-500`}
                     style={{
-                      width: `${(evento.inscritos / evento.capacidad) * 100}%`,
+                      width: `${evento.capacidad > 0 ? (evento.inscritos / evento.capacidad) * 100 : 0}%`,
                     }}
                   />
                 </div>
@@ -365,7 +445,7 @@ export default function Eventos() {
                     </svg>
                   </button>
                   <button
-                    onClick={() => console.log("Eliminar evento:", evento.id)}
+                    onClick={() => handleEliminar(evento.id)}
                     className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     title="Eliminar"
                   >
@@ -410,7 +490,7 @@ export default function Eventos() {
             No se encontraron eventos
           </h3>
           <p className="text-gray-600">
-            Intenta cambiar los filtros de búsqueda
+            Intenta cambiar los filtros de búsqueda o crea un nuevo evento
           </p>
         </div>
       )}

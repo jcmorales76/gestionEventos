@@ -1,71 +1,133 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { toast } from "react-hot-toast";
 import ModalNuevoParticipante from "../components/modals/ModalNuevoParticipante";
 
 export default function Participantes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterEvento, setFilterEvento] = useState("Todos");
   const [filterEstado, setFilterEstado] = useState("Todos");
+  const [participantes, setParticipantes] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Estado para el modal
   const [modalParticipanteOpen, setModalParticipanteOpen] = useState(false);
 
-  const participantes = [
-    {
-      id: 1,
-      nombre: "Carlos",
-      apellido: "Mendoza Ruiz",
-      email: "carlos.mendoza@email.com",
-      dni: "12345678",
-      telefono: "+51 987 654 321",
-      evento: "Curso de Liderazgo Ejecutivo",
-      fechaInscripcion: "15 May 2026",
-      estado: "Activo",
-      certificado: true,
-      materiales: 5,
-      avatar: "CM",
-    },
-    {
-      id: 2,
-      nombre: "Ana",
-      apellido: "Torres Silva",
-      email: "ana.torres@email.com",
-      dni: "87654321",
-      telefono: "+51 912 345 678",
-      evento: "Seminario de Innovación Digital",
-      fechaInscripcion: "18 May 2026",
-      estado: "Activo",
-      certificado: false,
-      materiales: 3,
-      avatar: "AT",
-    },
-    {
-      id: 3,
-      nombre: "Roberto",
-      apellido: "Díaz Morales",
-      email: "roberto.diaz@email.com",
-      dni: "45678912",
-      telefono: "+51 923 456 789",
-      evento: "Taller de Negociación Avanzada",
-      fechaInscripcion: "10 May 2026",
-      estado: "Activo",
-      certificado: true,
-      materiales: 4,
-      avatar: "RD",
-    },
-  ];
+  // Cargar participantes
+  useEffect(() => {
+    fetchParticipantes();
+  }, []);
+
+  const fetchParticipantes = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("http://localhost:5000/api/participantes");
+      if (!response.ok) throw new Error("Error al cargar participantes");
+
+      const data = await response.json();
+
+      // Formatear datos para la tabla
+      const participantesFormateados = data.map((p) => ({
+        id: p.id,
+        nombre: p.nombre,
+        apellido: p.apellido,
+        email: p.email,
+        dni: p.dni,
+        telefono: p.telefono,
+        evento: p.evento || "Sin evento",
+        fechaInscripcion: new Date(p.fecha_creacion).toLocaleDateString(
+          "es-ES",
+        ),
+        estado: p.estado,
+        certificado: false, // Placeholder para futura implementación
+        materiales: 0, // Placeholder
+        avatar: (
+          p.nombre.charAt(0) + (p.apellido?.charAt(0) || "")
+        ).toUpperCase(),
+      }));
+
+      setParticipantes(participantesFormateados);
+    } catch (error) {
+      console.error(error);
+      toast.error("Error al cargar participantes");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const participantesFiltrados = participantes.filter((part) => {
     const fullName = `${part.nombre} ${part.apellido}`.toLowerCase();
     const matchSearch =
       fullName.includes(searchTerm.toLowerCase()) ||
       part.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      part.dni.includes(searchTerm);
+      (part.dni && part.dni.includes(searchTerm));
     const matchEvento =
       filterEvento === "Todos" || part.evento === filterEvento;
     const matchEstado =
       filterEstado === "Todos" || part.estado === filterEstado;
     return matchSearch && matchEvento && matchEstado;
   });
+
+  // Crear participante
+  const handleNuevoParticipante = async (data) => {
+    try {
+      const payload = {
+        nombre: data.nombre,
+        apellido: data.apellido,
+        email: data.email,
+        dni: data.dni,
+        telefono: data.telefono,
+        estado: data.estado,
+        evento: data.evento, // El nombre del evento seleccionado
+      };
+
+      const response = await fetch("http://localhost:5000/api/participantes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        setModalParticipanteOpen(false);
+        toast.success("✅ Participante registrado exitosamente");
+        fetchParticipantes(); // Recargar lista
+      } else {
+        const error = await response.json();
+        toast.error(error.message || "Error al guardar participante");
+      }
+    } catch (error) {
+      toast.error("Error de conexión");
+    }
+  };
+
+  // Eliminar
+  const handleEliminar = async (id) => {
+    if (!window.confirm("¿Eliminar este participante?")) return;
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/participantes/${id}`,
+        {
+          method: "DELETE",
+        },
+      );
+      if (response.ok) {
+        toast.success("Participante eliminado");
+        setParticipantes(participantes.filter((p) => p.id !== id));
+      } else {
+        toast.error("Error al eliminar");
+      }
+    } catch (error) {
+      toast.error("Error de conexión");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+        <span className="ml-3 text-gray-600">Cargando participantes...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -80,7 +142,7 @@ export default function Participantes() {
           </p>
         </div>
         <div className="flex gap-3">
-          <button className="btn-secondary">📥 Importar CSV/Excel</button>
+          <button className="btn-secondary">📥 Importar CSV</button>
           <button
             onClick={() => setModalParticipanteOpen(true)}
             className="btn-primary"
@@ -108,8 +170,8 @@ export default function Participantes() {
             className="input-field md:w-64"
           >
             <option>Todos los eventos</option>
-            <option>Curso de Liderazgo Ejecutivo</option>
-            <option>Seminario de Innovación Digital</option>
+            {/* Podrías cargar eventos dinámicamente aquí si quisieras */}
+            <option>Sin evento</option>
           </select>
           <select
             value={filterEstado}
@@ -134,8 +196,6 @@ export default function Participantes() {
                 <th className="table-th">Evento</th>
                 <th className="table-th">Inscrito</th>
                 <th className="table-th">Estado</th>
-                <th className="table-th">Cert.</th>
-                <th className="table-th">Materiales</th>
                 <th className="table-th">Acciones</th>
               </tr>
             </thead>
@@ -154,7 +214,9 @@ export default function Participantes() {
                         <p className="font-medium text-gray-900 text-sm">
                           {part.nombre} {part.apellido}
                         </p>
-                        <p className="text-xs text-gray-500">DNI: {part.dni}</p>
+                        <p className="text-xs text-gray-500">
+                          DNI: {part.dni || "-"}
+                        </p>
                       </div>
                     </div>
                   </td>
@@ -180,29 +242,17 @@ export default function Participantes() {
                     </span>
                   </td>
                   <td className="table-td">
-                    {part.certificado ? (
-                      <span className="badge badge-success">✓ Emitido</span>
-                    ) : (
-                      <span className="badge bg-gray-100 text-gray-600">
-                        Pendiente
-                      </span>
-                    )}
-                  </td>
-                  <td className="table-td">
-                    <span className="text-sm font-medium text-gray-900">
-                      {part.materiales}
-                    </span>
-                    <span className="text-xs text-gray-500"> descargados</span>
-                  </td>
-                  <td className="table-td">
                     <div className="flex items-center gap-2">
                       <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                        👁️
+                        ️
                       </button>
                       <button className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
                         ✏️
                       </button>
-                      <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                      <button
+                        onClick={() => handleEliminar(part.id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
                         🗑️
                       </button>
                     </div>
@@ -214,14 +264,11 @@ export default function Participantes() {
         </div>
       </div>
 
-      {/* MODAL INTEGRADO */}
+      {/* Modal */}
       <ModalNuevoParticipante
         isOpen={modalParticipanteOpen}
         onClose={() => setModalParticipanteOpen(false)}
-        onSave={(data) => {
-          console.log("Participante guardado:", data);
-          setModalParticipanteOpen(false);
-        }}
+        onSave={handleNuevoParticipante}
       />
     </div>
   );

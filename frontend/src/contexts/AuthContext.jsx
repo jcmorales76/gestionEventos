@@ -16,24 +16,29 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    // SIMULACIÓN DE LOGIN (Se conectará al Backend luego)
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (email === "admin@fepcmac.com" && password === "123456") {
-          const userData = {
-            id: 1,
-            name: "Administrador FEPCMAC",
-            email: email,
-            role: "admin",
-          };
-          setUser(userData);
-          localStorage.setItem("fepcmac_user", JSON.stringify(userData));
-          resolve(userData);
-        } else {
-          reject(new Error("Credenciales inválidas"));
-        }
-      }, 500);
-    });
+    try {
+      // Llamada real al backend
+      const response = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Error al iniciar sesión");
+      }
+
+      // Guardar token y usuario
+      localStorage.setItem("eventflow_token", data.token);
+      localStorage.setItem("eventflow_user", JSON.stringify(data.user));
+
+      setUser(data.user);
+      return data.user;
+    } catch (error) {
+      throw error;
+    }
   };
 
   const logout = () => {
