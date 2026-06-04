@@ -14,7 +14,7 @@ app.use(express.json());
 // Rutas
 app.use("/api/auth", authRoutes);
 app.use("/api/eventos", eventoRoutes);
-// app.use("/api/participantes", participanteRoutes);
+app.use("/api/participantes", participanteRoutes);
 // Ruta de prueba
 app.get("/", (req, res) => {
   res.send("API de EventFlow funcionando correctamente 🚀");

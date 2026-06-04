@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Modal from "../Modal";
 
 export default function ModalNuevoParticipante({ isOpen, onClose, onSave }) {
+  const [eventos, setEventos] = useState([]);
   const [form, setForm] = useState({
     nombre: "",
     apellido: "",
@@ -11,12 +12,33 @@ export default function ModalNuevoParticipante({ isOpen, onClose, onSave }) {
     evento: "",
     estado: "Activo",
   });
-  const handleChange = (e) =>
+
+  // Cargar eventos al abrir el modal
+  useEffect(() => {
+    if (isOpen) {
+      fetchEventos();
+    }
+  }, [isOpen]);
+
+  const fetchEventos = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/eventos");
+      if (response.ok) {
+        const data = await response.json();
+        setEventos(data);
+      }
+    } catch (error) {
+      console.error("Error cargando eventos:", error);
+    }
+  };
+
+  const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     onSave(form);
-    onClose();
   };
 
   return (
@@ -35,7 +57,7 @@ export default function ModalNuevoParticipante({ isOpen, onClose, onSave }) {
         </>
       }
     >
-      <form className="space-y-4">
+      <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="label-input">Nombre *</label>
@@ -86,7 +108,7 @@ export default function ModalNuevoParticipante({ isOpen, onClose, onSave }) {
               className="input-field"
             />
           </div>
-          <div>
+          <div className="col-span-2">
             <label className="label-input">Evento</label>
             <select
               name="evento"
@@ -95,8 +117,11 @@ export default function ModalNuevoParticipante({ isOpen, onClose, onSave }) {
               className="input-field"
             >
               <option value="">-- Sin evento asignado --</option>
-              <option>Curso de Liderazgo</option>
-              <option>Seminario de Innovación</option>
+              {eventos.map((evento) => (
+                <option key={evento.id} value={evento.nombre}>
+                  {evento.nombre}
+                </option>
+              ))}
             </select>
           </div>
           <div>

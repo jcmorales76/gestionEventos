@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
-import { toast } from "react-hot-toast"; // Importar toast para notificaciones
+import { toast } from "react-hot-toast";
 import ModalNuevoEvento from "../components/modals/ModalNuevoEvento";
 import ModalDetalleEvento from "../components/modals/ModalDetalleEvento";
+import ModalEditarEvento from "../components/modals/ModalEditarEvento";
+import ModalConfirmacion from "../components/ModalConfirmacion";
 
 export default function Eventos() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -13,9 +15,12 @@ export default function Eventos() {
   // Estados para modales
   const [modalNuevoOpen, setModalNuevoOpen] = useState(false);
   const [modalDetalleOpen, setModalDetalleOpen] = useState(false);
+  const [modalEditarOpen, setModalEditarOpen] = useState(false);
+  const [modalConfirmacionOpen, setModalConfirmacionOpen] = useState(false);
   const [eventoSeleccionado, setEventoSeleccionado] = useState(null);
+  const [eventoAEliminar, setEventoAEliminar] = useState(null);
 
-  // Cargar eventos al montar el componente
+  // Cargar eventos al montar
   useEffect(() => {
     fetchEventos();
   }, []);
@@ -45,7 +50,7 @@ export default function Eventos() {
         color: getColorClass(evento.color),
         bgBadge: getBgBadgeClass(evento.tipo),
         barColor: getColorClass(evento.color),
-        // Datos completos para el modal
+        // Datos completos para los modales
         descripcion: evento.descripcion,
         fecha_inicio: evento.fecha_inicio,
         fecha_fin: evento.fecha_fin,
@@ -58,15 +63,14 @@ export default function Eventos() {
       setEventos(eventosFormateados);
     } catch (error) {
       console.error("Error cargando eventos:", error);
-      // Si falla la API, no mostramos nada o podrías usar datos de prueba
+      toast.error("Error al cargar eventos");
       setEventos([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // --- Funciones Auxiliares ---
-
+  // Funciones auxiliares
   const formatoFecha = (fechaString) => {
     if (!fechaString) return "Por definir";
     const fecha = new Date(fechaString);
@@ -113,7 +117,7 @@ export default function Eventos() {
     }
   };
 
-  // --- Filtros ---
+  // Filtros
   const eventosFiltrados = eventos.filter((evento) => {
     const matchSearch =
       evento.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -125,11 +129,15 @@ export default function Eventos() {
     return matchSearch && matchTipo && matchEstado;
   });
 
-  // --- Handlers ---
-
+  // Handlers
   const handleVerDetalle = (evento) => {
     setEventoSeleccionado(evento);
     setModalDetalleOpen(true);
+  };
+
+  const handleAbrirEditar = () => {
+    setModalDetalleOpen(false);
+    setModalEditarOpen(true);
   };
 
   // CREAR EVENTO
@@ -158,16 +166,11 @@ export default function Eventos() {
       });
 
       if (response.ok) {
-        // 1. Cerrar modal inmediatamente
         setModalNuevoOpen(false);
-
-        // 2. Mostrar notificación bonita
         toast.success("✅ Evento creado exitosamente");
-
-        // 3. Recargar la lista de eventos
         await fetchEventos();
       } else {
-        toast.error(" Error al crear el evento");
+        toast.error("Error al crear el evento");
       }
     } catch (error) {
       console.error("Error de conexión:", error);
@@ -175,33 +178,78 @@ export default function Eventos() {
     }
   };
 
-  // ELIMINAR EVENTO
-  const handleEliminar = async (id) => {
-    if (
-      !window.confirm(
-        "¿Estás seguro de eliminar este evento? Esta acción no se puede deshacer.",
-      )
-    )
-      return;
-
+  // EDITAR EVENTO
+  const handleEditarEvento = async (data) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/eventos/${id}`, {
-        method: "DELETE",
-      });
+      const payload = {
+        nombre: data.nombre,
+        tipo: data.tipo,
+        estado: data.estado,
+        descripcion: data.descripcion || "",
+        fecha_inicio: data.fechaInicio || null,
+        fecha_fin: data.fechaFin || null,
+        hora_inicio: data.horaInicio || null,
+        capacidad: parseInt(data.capacidad) || 0,
+        lugar: data.lugar || "",
+        expositor: data.expositor || "",
+        color: data.color || "#dc2626",
+        horas_academicas: parseInt(data.horas) || 0,
+        instructor: data.instructor || "",
+      };
+
+      const response = await fetch(
+        `http://localhost:5000/api/eventos/${data.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
 
       if (response.ok) {
-        toast.success("Evento eliminado correctamente");
-        setEventos(eventos.filter((e) => e.id !== id)); // Actualizar UI localmente
+        setModalEditarOpen(false);
+        toast.success("✅ Evento actualizado exitosamente");
+        await fetchEventos();
+      } else {
+        toast.error("Error al actualizar el evento");
+      }
+    } catch (error) {
+      console.error("Error de conexión:", error);
+      toast.error("Error de conexión al actualizar");
+    }
+  };
+
+  // ELIMINAR EVENTO (con modal personalizado)
+  const handleEliminarClick = (evento) => {
+    setEventoAEliminar(evento);
+    setModalConfirmacionOpen(true);
+  };
+
+  const handleConfirmarEliminar = async () => {
+    if (!eventoAEliminar) return;
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/eventos/${eventoAEliminar.id}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      if (response.ok) {
+        toast.success("✅ Evento eliminado correctamente");
+        setEventos(eventos.filter((e) => e.id !== eventoAEliminar.id));
       } else {
         toast.error("Error al eliminar el evento");
       }
     } catch (error) {
       toast.error("Error de conexión al eliminar");
+    } finally {
+      setEventoAEliminar(null);
     }
   };
 
-  // --- Renderizado ---
-
+  // Loading
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -426,7 +474,10 @@ export default function Eventos() {
                     </svg>
                   </button>
                   <button
-                    onClick={() => handleVerDetalle(evento)}
+                    onClick={() => {
+                      setEventoSeleccionado(evento);
+                      handleAbrirEditar();
+                    }}
                     className="p-2 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                     title="Editar"
                   >
@@ -445,7 +496,7 @@ export default function Eventos() {
                     </svg>
                   </button>
                   <button
-                    onClick={() => handleEliminar(evento.id)}
+                    onClick={() => handleEliminarClick(evento)}
                     className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     title="Eliminar"
                   >
@@ -470,7 +521,6 @@ export default function Eventos() {
         ))}
       </div>
 
-      {/* Mensaje si no hay resultados */}
       {eventosFiltrados.length === 0 && (
         <div className="text-center py-12">
           <svg
@@ -495,16 +545,36 @@ export default function Eventos() {
         </div>
       )}
 
-      {/* MODALES INTEGRADOS */}
+      {/* MODALES */}
       <ModalNuevoEvento
         isOpen={modalNuevoOpen}
         onClose={() => setModalNuevoOpen(false)}
         onSave={handleNuevoEvento}
       />
+
       <ModalDetalleEvento
         isOpen={modalDetalleOpen}
         onClose={() => setModalDetalleOpen(false)}
         evento={eventoSeleccionado}
+        onEdit={handleAbrirEditar}
+      />
+
+      <ModalEditarEvento
+        isOpen={modalEditarOpen}
+        onClose={() => setModalEditarOpen(false)}
+        evento={eventoSeleccionado}
+        onSave={handleEditarEvento}
+      />
+
+      <ModalConfirmacion
+        isOpen={modalConfirmacionOpen}
+        onClose={() => {
+          setModalConfirmacionOpen(false);
+          setEventoAEliminar(null);
+        }}
+        onConfirm={handleConfirmarEliminar}
+        title="¿Eliminar evento?"
+        message={`¿Estás seguro de eliminar "${eventoAEliminar?.nombre}"? Esta acción no se puede deshacer.`}
       />
     </div>
   );

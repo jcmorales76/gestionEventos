@@ -1,56 +1,70 @@
 const pool = require("../config/db");
-const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+
+// Configuración de seguridad (puedes cambiar 30, 45 o 60)
+const PASSWORD_EXPIRY_DAYS = 60;
 
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    if (!email || !password)
+      return res.status(400).json({ message: "Credenciales requeridas" });
 
-    // Validar campos
-    if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Email y contraseña son requeridos" });
-    }
-
-    // Buscar usuario por email
     const [rows] = await pool.query("SELECT * FROM usuarios WHERE email = ?", [
       email,
     ]);
-
-    if (rows.length === 0) {
+    if (rows.length === 0)
       return res.status(401).json({ message: "Credenciales incorrectas" });
-    }
 
     const user = rows[0];
 
-    // Verificar contraseña (para prueba temporal)
-    // Si la contraseña en BD está en texto plano (sin encriptar):
+    // Verificar contraseña (temporalmente en texto plano para desarrollo)
     if (password !== user.password) {
-      // Si usas bcrypt en el futuro, descomenta esto:
-      // const isMatch = await bcrypt.compare(password, user.password);
-      // if (!isMatch) {
       return res.status(401).json({ message: "Credenciales incorrectas" });
-      // }
     }
 
-    // Generar token JWT
+    // 🔒 VERIFICAR EXPIRACIÓN DE CONTRASEÑA
+    const lastChanged = new Date(user.password_changed_at).getTime();
+    const daysSinceChange = (Date.now() - lastChanged) / (1000 * 60 * 60 * 24);
+    const isExpired = daysSinceChange > PASSWORD_EXPIRY_DAYS;
+
     const token = jwt.sign(
       { id: user.id, email: user.email, rol: user.rol },
-      "tu_secreto_super_seguro_123", // En producción usar process.env.JWT_SECRET
+      "tu_secreto_super_seguro_123",
       { expiresIn: "24h" },
     );
+    const { password: _, ...userSafe } = user;
 
-    // Retornar datos sin la contraseña
-    const { password: _, ...userWithoutPassword } = user;
-
+    // Retornar respuesta con flag de expiración
     res.json({
       message: "Login exitoso",
       token,
-      user: userWithoutPassword,
+      user: { ...userSafe, passwordExpired: isExpired },
     });
   } catch (error) {
     console.error("Error en login:", error);
-    res.status(500).json({ message: "Error en el servidor: " + error.message });
+    res.status(500).json({ message: "Error en el servidor" });
+  }
+};
+
+// Endpoint para cambiar contraseña
+exports.changePassword = async (req, res) => {
+  try {
+    const { userId, currentPassword, newPassword } = req.body;
+    const [rows] = await pool.query("SELECT * FROM usuarios WHERE id = ?", [
+      userId,
+    ]);
+
+    if (rows.length === 0 || rows[0].password !== currentPassword) {
+      return res.status(400).json({ message: "Contraseña actual incorrecta" });
+    }
+
+    await pool.query(
+      "UPDATE usuarios SET password = ?, password_changed_at = NOW() WHERE id = ?",
+      [newPassword, userId],
+    );
+    res.json({ message: "Contraseña actualizada exitosamente" });
+  } catch (error) {
+    res.status(500).json({ message: "Error al cambiar contraseña" });
   }
 };

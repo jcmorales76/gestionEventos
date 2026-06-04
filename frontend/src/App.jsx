@@ -20,6 +20,7 @@ import Certificados from "./pages/Certificados";
 import Usuarios from "./pages/Usuarios";
 import Reportes from "./pages/Reportes";
 import Importacion from "./pages/Importacion";
+import CambiarPassword from "./pages/CambiarPassword";
 
 // Layouts y Portal Participante
 import ParticipantLayout from "./layouts/ParticipantLayout";
@@ -139,6 +140,7 @@ function App() {
           <Route path="/usuarios" element={<Usuarios />} />
           <Route path="/reportes" element={<Reportes />} />
           <Route path="/importacion" element={<Importacion />} />
+          <Route path="/cambiar-password" element={<CambiarPassword />} />
         </Route>
 
         {/* Rutas del Portal de Participantes */}

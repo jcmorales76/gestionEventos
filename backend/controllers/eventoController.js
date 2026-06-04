@@ -124,3 +124,22 @@ exports.deleteEvento = async (req, res) => {
     res.status(500).json({ message: "Error al eliminar evento" });
   }
 };
+
+// Obtener un evento por ID
+exports.getEventoById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [eventos] = await pool.query("SELECT * FROM eventos WHERE id=?", [
+      id,
+    ]);
+
+    if (eventos.length === 0) {
+      return res.status(404).json({ message: "Evento no encontrado" });
+    }
+
+    res.json(eventos[0]);
+  } catch (error) {
+    console.error("Error al obtener evento:", error);
+    res.status(500).json({ message: "Error al obtener evento" });
+  }
+};
