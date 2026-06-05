@@ -3,6 +3,9 @@ const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
 const eventoRoutes = require("./routes/eventoRoutes");
 const participanteRoutes = require("./routes/participanteRoutes");
+const configRoutes = require("./routes/configRoutes");
+const usuarioRoutes = require("./routes/usuarioRoutes");
+const path = require("path");
 
 const app = express();
 const PORT = 5000;
@@ -15,6 +18,10 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/eventos", eventoRoutes);
 app.use("/api/participantes", participanteRoutes);
+app.use("/api/config", configRoutes);
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/api/usuarios", usuarioRoutes);
+
 // Ruta de prueba
 app.get("/", (req, res) => {
   res.send("API de EventFlow funcionando correctamente 🚀");

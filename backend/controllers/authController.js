@@ -10,6 +10,14 @@ exports.login = async (req, res) => {
     if (!email || !password)
       return res.status(400).json({ message: "Credenciales requeridas" });
 
+    // 1. Obtener días de expiración desde la BD
+    const [configRows] = await pool.query(
+      "SELECT valor FROM configuraciones WHERE clave = 'password_expiry_days'",
+    );
+    const expiryDays =
+      configRows.length > 0 ? parseInt(configRows[0].valor) : 60;
+
+    // 2. Buscar usuario
     const [rows] = await pool.query("SELECT * FROM usuarios WHERE email = ?", [
       email,
     ]);
@@ -18,15 +26,16 @@ exports.login = async (req, res) => {
 
     const user = rows[0];
 
-    // Verificar contraseña (temporalmente en texto plano para desarrollo)
     if (password !== user.password) {
       return res.status(401).json({ message: "Credenciales incorrectas" });
     }
 
-    // 🔒 VERIFICAR EXPIRACIÓN DE CONTRASEÑA
-    const lastChanged = new Date(user.password_changed_at).getTime();
+    // 3. Verificar expiración usando el valor dinámico
+    const lastChanged = new Date(
+      user.password_changed_at || user.fecha_creacion,
+    ).getTime();
     const daysSinceChange = (Date.now() - lastChanged) / (1000 * 60 * 60 * 24);
-    const isExpired = daysSinceChange > PASSWORD_EXPIRY_DAYS;
+    const isExpired = daysSinceChange > expiryDays;
 
     const token = jwt.sign(
       { id: user.id, email: user.email, rol: user.rol },
@@ -35,7 +44,6 @@ exports.login = async (req, res) => {
     );
     const { password: _, ...userSafe } = user;
 
-    // Retornar respuesta con flag de expiración
     res.json({
       message: "Login exitoso",
       token,

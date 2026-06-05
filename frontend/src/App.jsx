@@ -5,7 +5,9 @@ import {
   Navigate,
   Outlet,
   Link,
+  useLocation,
 } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { useAuth } from "./contexts/AuthContext";
 import { useTheme } from "./contexts/ThemeContext";
 import { Toaster } from "react-hot-toast";
@@ -20,7 +22,7 @@ import Certificados from "./pages/Certificados";
 import Usuarios from "./pages/Usuarios";
 import Reportes from "./pages/Reportes";
 import Importacion from "./pages/Importacion";
-import CambiarPassword from "./pages/CambiarPassword";
+import Configuracion from "./pages/Configuracion";
 
 // Layouts y Portal Participante
 import ParticipantLayout from "./layouts/ParticipantLayout";
@@ -33,77 +35,141 @@ import MiPerfil from "./pages/MiPerfil";
 const PrivateLayout = () => {
   const { user, logout } = useAuth();
   const { theme } = useTheme();
+  const location = useLocation();
+  const [systemLogo, setSystemLogo] = useState(null);
+  const [config, setConfig] = useState(null);
 
   if (!user) return <Navigate to="/login" replace />;
 
+  // Cargar logo y configuración del sistema
+  useEffect(() => {
+    const fetchSystemConfig = async () => {
+      try {
+        const logoRes = await fetch("http://localhost:5000/api/config/logo");
+        const logoData = await logoRes.json();
+        if (logoData.logoUrl) {
+          setSystemLogo(`http://localhost:5000${logoData.logoUrl}`);
+        }
+
+        const configRes = await fetch("http://localhost:5000/api/config");
+        const configData = await configRes.json();
+        setConfig(configData);
+      } catch (error) {
+        console.error("Error cargando configuración:", error);
+      }
+    };
+
+    fetchSystemConfig();
+  }, []);
+
+  const menuItems = [
+    { path: "/dashboard", label: "Dashboard", icon: "📊" },
+    { path: "/eventos", label: "Eventos", icon: "📅" },
+    { path: "/participantes", label: "Participantes", icon: "👥" },
+    { path: "/materiales", label: "Materiales", icon: "📁" },
+    { path: "/certificados", label: "Certificados", icon: "📜" },
+    { path: "/usuarios", label: "Usuarios", icon: "👤" },
+    { path: "/reportes", label: "Reportes", icon: "📈" },
+    { path: "/importacion", label: "Importación Masiva", icon: "📥" },
+    { path: "/configuracion", label: "Configuración", icon: "⚙️" },
+  ];
+
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Sidebar - Usando Link de React Router */}
+    <div className="flex h-screen overflow-hidden bg-gray-50">
+      {/* Sidebar - SIEMPRE VISIBLE */}
       <aside
-        style={{ backgroundColor: theme.sidebarBg }}
-        className="w-60 flex-shrink-0 hidden md:flex flex-col text-white transition-all duration-300"
+        style={{ backgroundColor: theme.sidebarBg || "#0f172a" }}
+        className="w-64 flex-shrink-0 flex flex-col text-white transition-all duration-300"
       >
         {/* Logo */}
         <div className="p-4 flex items-center gap-3 border-b border-white/10">
-          <div className="w-9 h-9 rounded-lg bg-red-600 flex items-center justify-center font-bold text-lg">
-            F
-          </div>
-          <div>
+          {systemLogo ? (
+            <img
+              src={systemLogo}
+              alt="Logo"
+              className="h-10 w-auto object-contain rounded-lg"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-lg bg-red-600 flex items-center justify-center font-bold text-lg flex-shrink-0">
+              F
+            </div>
+          )}
+          <div className="min-w-0">
             <span className="font-bold text-base tracking-wider block leading-tight">
-              FEPCMAC
+              {config?.nombre_sistema?.valor || ""}
             </span>
-            <span className="text-xs text-white/60">Gestión de Eventos</span>
+            <span className="text-xs text-white/60 block">
+              Gestión de Eventos
+            </span>
           </div>
         </div>
 
-        {/* Navegación - Usando Link en lugar de <a> */}
-        <nav className="flex-1 px-3 space-y-1 mt-4">
-          <Link to="/dashboard" className="sidebar-link">
-            Dashboard
-          </Link>
-          <Link to="/eventos" className="sidebar-link">
-            Eventos
-          </Link>
-          <Link to="/participantes" className="sidebar-link">
-            Participantes
-          </Link>
-          <Link to="/materiales" className="sidebar-link">
-            Materiales
-          </Link>
-          <Link to="/certificados" className="sidebar-link">
-            Certificados
-          </Link>
-          <Link to="/usuarios" className="sidebar-link">
-            Usuarios
-          </Link>
-          <Link to="/reportes" className="sidebar-link">
-            Reportes
-          </Link>
-          <Link to="/importacion" className="sidebar-link">
-            Importación Masiva
-          </Link>
+        {/* Navegación */}
+        <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
+          {menuItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-sm font-medium ${
+                  isActive
+                    ? "bg-red-600 text-white shadow-lg"
+                    : "text-white/70 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                <span className="text-lg">{item.icon}</span>
+                <span className="truncate">{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
 
         {/* Usuario */}
-        <div className="p-3 border-t border-white/10">
+        <div className="p-4 border-t border-white/10 bg-black/20">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+              <span className="text-sm font-bold">
+                {user?.name?.charAt(0) || "A"}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">
+                {user?.name || "Administrador"}
+              </p>
+              <p className="text-xs text-white/60 truncate">
+                {user?.email || "admin@fepcmac.com"}
+              </p>
+            </div>
+          </div>
           <button
             onClick={logout}
-            className="text-sm text-white/70 hover:text-white"
+            className="w-full px-4 py-2 text-xs font-medium text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
           >
-            Cerrar sesión
+            Cerrar Sesión
           </button>
         </div>
       </aside>
 
       {/* Contenido Principal */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-5">
-          <h2 className="text-base font-semibold text-gray-800">
+        {/* Header */}
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 flex-shrink-0">
+          <h2 className="text-lg font-semibold text-gray-800">
             Gestión de Eventos
           </h2>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-600 hidden sm:block">
+              {user?.name}
+            </span>
+            <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-semibold text-sm">
+              {user?.name?.charAt(0) || "A"}
+            </div>
+          </div>
         </header>
 
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-5">
+        {/* Main Content - Scrollable */}
+        <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
           <Outlet />
         </main>
       </div>
@@ -117,7 +183,13 @@ function App() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-xl bg-red-600 flex items-center justify-center mx-auto mb-4">
+            <span className="text-white text-3xl font-bold">F</span>
+          </div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 font-medium">Cargando FEPCMAC...</p>
+        </div>
       </div>
     );
   }
@@ -140,7 +212,7 @@ function App() {
           <Route path="/usuarios" element={<Usuarios />} />
           <Route path="/reportes" element={<Reportes />} />
           <Route path="/importacion" element={<Importacion />} />
-          <Route path="/cambiar-password" element={<CambiarPassword />} />
+          <Route path="/configuracion" element={<Configuracion />} />
         </Route>
 
         {/* Rutas del Portal de Participantes */}
