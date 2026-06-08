@@ -5,6 +5,7 @@ const eventoRoutes = require("./routes/eventoRoutes");
 const participanteRoutes = require("./routes/participanteRoutes");
 const configRoutes = require("./routes/configRoutes");
 const usuarioRoutes = require("./routes/usuarioRoutes");
+const materialRoutes = require("./routes/materialRoutes");
 const path = require("path");
 
 const app = express();
@@ -21,6 +22,8 @@ app.use("/api/participantes", participanteRoutes);
 app.use("/api/config", configRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/usuarios", usuarioRoutes);
+app.use("/api/materiales", materialRoutes);
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Ruta de prueba
 app.get("/", (req, res) => {

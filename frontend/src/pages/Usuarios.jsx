@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import ModalNuevoUsuario from "../components/modals/ModalNuevoUsuario";
-import ModalConfirmacion from "../components/ModalConfirmacion";
+import ModalConfirmacionPersonalizada from "../components/ModalConfirmacionPersonalizada";
 
 export default function Usuarios() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -11,9 +11,11 @@ export default function Usuarios() {
   const [loading, setLoading] = useState(true);
 
   const [modalUsuarioOpen, setModalUsuarioOpen] = useState(false);
-  const [modalConfirmacionOpen, setModalConfirmacionOpen] = useState(false);
+  const [modalEliminarOpen, setModalEliminarOpen] = useState(false);
+  const [modalResetOpen, setModalResetOpen] = useState(false);
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
   const [usuarioAEliminar, setUsuarioAEliminar] = useState(null);
+  const [usuarioAReset, setUsuarioAReset] = useState(null);
 
   useEffect(() => {
     fetchUsuarios();
@@ -94,7 +96,7 @@ export default function Usuarios() {
   // Eliminar
   const handleEliminarClick = (usuario) => {
     setUsuarioAEliminar(usuario);
-    setModalConfirmacionOpen(true);
+    setModalEliminarOpen(true);
   };
 
   const handleConfirmarEliminar = async () => {
@@ -109,7 +111,7 @@ export default function Usuarios() {
       );
 
       if (response.ok) {
-        toast.success("Usuario eliminado correctamente");
+        toast.success("✅ Usuario eliminado correctamente");
         setUsuarios(usuarios.filter((u) => u.id !== usuarioAEliminar.id));
       } else {
         toast.error("Error al eliminar");
@@ -119,17 +121,18 @@ export default function Usuarios() {
     }
   };
 
-  // Reset contraseña - SIN MOSTRAR LA CLAVE
-  const handleResetPassword = async (usuario) => {
-    const confirmed = window.confirm(
-      `¿Estás seguro de resetear la contraseña de ${usuario.nombre} ${usuario.apellido}?\n\nSe establecerá en "123456" temporalmente.`,
-    );
+  // Reset contraseña
+  const handleResetPasswordClick = (usuario) => {
+    setUsuarioAReset(usuario);
+    setModalResetOpen(true);
+  };
 
-    if (!confirmed) return;
+  const handleConfirmarReset = async () => {
+    if (!usuarioAReset) return;
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/usuarios/${usuario.id}/reset-password`,
+        `http://localhost:5000/api/usuarios/${usuarioAReset.id}/reset-password`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -138,7 +141,7 @@ export default function Usuarios() {
       );
 
       if (response.ok) {
-        toast.success(`✅ Contraseña de ${usuario.nombre} reseteada`);
+        toast.success(`✅ Contraseña de ${usuarioAReset.nombre} reseteada`);
       } else {
         toast.error("Error al resetear contraseña");
       }
@@ -306,7 +309,7 @@ export default function Usuarios() {
                         ✏️
                       </button>
                       <button
-                        onClick={() => handleResetPassword(u)}
+                        onClick={() => handleResetPasswordClick(u)}
                         className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
                         title="Resetear contraseña"
                       >
@@ -317,7 +320,7 @@ export default function Usuarios() {
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         title="Eliminar"
                       >
-                        🗑️
+                        ️
                       </button>
                     </div>
                   </td>
@@ -360,15 +363,30 @@ export default function Usuarios() {
         onSave={handleGuardarUsuario}
       />
 
-      <ModalConfirmacion
-        isOpen={modalConfirmacionOpen}
+      <ModalConfirmacionPersonalizada
+        isOpen={modalEliminarOpen}
         onClose={() => {
-          setModalConfirmacionOpen(false);
+          setModalEliminarOpen(false);
           setUsuarioAEliminar(null);
         }}
         onConfirm={handleConfirmarEliminar}
         title="¿Eliminar usuario?"
-        message={`¿Estás seguro de eliminar a "${usuarioAEliminar?.nombre} ${usuarioAEliminar?.apellido}"? Esta acción no se puede deshacer.`}
+        message={`¿Estás seguro de eliminar a <strong>${usuarioAEliminar?.nombre} ${usuarioAEliminar?.apellido}</strong>?<br/><br/><span class="text-red-600 font-semibold">Esta acción no se puede deshacer.</span>`}
+        confirmText="Eliminar"
+        type="danger"
+      />
+
+      <ModalConfirmacionPersonalizada
+        isOpen={modalResetOpen}
+        onClose={() => {
+          setModalResetOpen(false);
+          setUsuarioAReset(null);
+        }}
+        onConfirm={handleConfirmarReset}
+        title="¿Resetear contraseña?"
+        message={`¿Estás seguro de resetear la contraseña de <strong>${usuarioAReset?.nombre} ${usuarioAReset?.apellido}</strong>?<br/><br/>Se establecerá temporalmente en <strong>"123456"</strong>`}
+        confirmText="Resetear"
+        type="warning"
       />
     </div>
   );

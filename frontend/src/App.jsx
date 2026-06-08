@@ -23,6 +23,7 @@ import Usuarios from "./pages/Usuarios";
 import Reportes from "./pages/Reportes";
 import Importacion from "./pages/Importacion";
 import Configuracion from "./pages/Configuracion";
+import ModalConfirmacionPersonalizada from "./components/ModalConfirmacionPersonalizada";
 
 // Layouts y Portal Participante
 import ParticipantLayout from "./layouts/ParticipantLayout";

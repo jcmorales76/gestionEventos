@@ -3,7 +3,7 @@ import { toast } from "react-hot-toast";
 import ModalNuevoEvento from "../components/modals/ModalNuevoEvento";
 import ModalDetalleEvento from "../components/modals/ModalDetalleEvento";
 import ModalEditarEvento from "../components/modals/ModalEditarEvento";
-import ModalConfirmacion from "../components/ModalConfirmacion";
+import ModalConfirmacionPersonalizada from "../components/ModalConfirmacionPersonalizada";
 
 export default function Eventos() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -47,9 +47,7 @@ export default function Eventos() {
         inscritos: evento.inscritos || 0,
         capacidad: evento.capacidad || 0,
         estado: evento.estado || "Próximo",
-        color: getColorClass(evento.color),
         bgBadge: getBgBadgeClass(evento.tipo),
-        barColor: getColorClass(evento.color),
         // Datos completos para los modales
         descripcion: evento.descripcion,
         fecha_inicio: evento.fecha_inicio,
@@ -57,7 +55,7 @@ export default function Eventos() {
         hora_inicio: evento.hora_inicio,
         horas_academicas: evento.horas_academicas,
         instructor: evento.instructor,
-        colorHex: evento.color,
+        colorHex: evento.color || "#dc2626",
       }));
 
       setEventos(eventosFormateados);
@@ -81,18 +79,6 @@ export default function Eventos() {
     });
   };
 
-  const getColorClass = (color) => {
-    const colorMap = {
-      "#9333ea": "border-purple-500",
-      "#dc2626": "border-red-500",
-      "#1e3a8a": "border-blue-900",
-      "#f97316": "border-orange-500",
-      "#22c55e": "border-green-500",
-      "#14b8a6": "border-teal-500",
-    };
-    return colorMap[color] || "border-red-500";
-  };
-
   const getBgBadgeClass = (tipo) => {
     const map = {
       Curso: "bg-purple-100 text-purple-700",
@@ -107,11 +93,11 @@ export default function Eventos() {
   const getEstadoBadge = (estado) => {
     switch (estado) {
       case "Activo":
-        return "badge-success";
+        return "bg-green-100 text-green-700";
       case "Próximo":
-        return "badge-warning";
+        return "bg-yellow-100 text-yellow-700";
       case "Finalizado":
-        return "badge-info";
+        return "bg-blue-100 text-blue-700";
       default:
         return "bg-gray-100 text-gray-700";
     }
@@ -219,7 +205,7 @@ export default function Eventos() {
     }
   };
 
-  // ELIMINAR EVENTO (con modal personalizado)
+  // ELIMINAR EVENTO
   const handleEliminarClick = (evento) => {
     setEventoAEliminar(evento);
     setModalConfirmacionOpen(true);
@@ -244,8 +230,6 @@ export default function Eventos() {
       }
     } catch (error) {
       toast.error("Error de conexión al eliminar");
-    } finally {
-      setEventoAEliminar(null);
     }
   };
 
@@ -352,7 +336,8 @@ export default function Eventos() {
         {eventosFiltrados.map((evento) => (
           <div
             key={evento.id}
-            className={`bg-white rounded-xl shadow-sm border-t-4 ${evento.color} hover:shadow-lg transition-all duration-300 overflow-hidden group`}
+            className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group"
+            style={{ borderTop: `4px solid ${evento.colorHex || "#dc2626"}` }}
           >
             <div className="p-6">
               <div className="mb-4">
@@ -433,9 +418,10 @@ export default function Eventos() {
                 </div>
                 <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div
-                    className={`h-full ${evento.barColor} rounded-full transition-all duration-500`}
+                    className="h-full rounded-full transition-all duration-500"
                     style={{
                       width: `${evento.capacidad > 0 ? (evento.inscritos / evento.capacidad) * 100 : 0}%`,
+                      backgroundColor: evento.colorHex || "#dc2626",
                     }}
                   />
                 </div>
@@ -566,7 +552,7 @@ export default function Eventos() {
         onSave={handleEditarEvento}
       />
 
-      <ModalConfirmacion
+      <ModalConfirmacionPersonalizada
         isOpen={modalConfirmacionOpen}
         onClose={() => {
           setModalConfirmacionOpen(false);
@@ -574,7 +560,9 @@ export default function Eventos() {
         }}
         onConfirm={handleConfirmarEliminar}
         title="¿Eliminar evento?"
-        message={`¿Estás seguro de eliminar "${eventoAEliminar?.nombre}"? Esta acción no se puede deshacer.`}
+        message={`¿Estás seguro de eliminar <strong>"${eventoAEliminar?.nombre}"</strong>?<br/><br/><span style="color: #dc2626; font-weight: 600;">Esta acción no se puede deshacer.</span>`}
+        confirmText="Eliminar"
+        type="danger"
       />
     </div>
   );
