@@ -24,6 +24,7 @@ import Reportes from "./pages/Reportes";
 import Importacion from "./pages/Importacion";
 import Configuracion from "./pages/Configuracion";
 import ModalConfirmacionPersonalizada from "./components/ModalConfirmacionPersonalizada";
+import Certificados from "./pages/Certificados";
 
 // Layouts y Portal Participante
 import ParticipantLayout from "./layouts/ParticipantLayout";
@@ -214,6 +215,7 @@ function App() {
           <Route path="/reportes" element={<Reportes />} />
           <Route path="/importacion" element={<Importacion />} />
           <Route path="/configuracion" element={<Configuracion />} />
+          <Route path="/certificados" element={<Certificados />} />
         </Route>
 
         {/* Rutas del Portal de Participantes */}

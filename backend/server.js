@@ -6,6 +6,7 @@ const participanteRoutes = require("./routes/participanteRoutes");
 const configRoutes = require("./routes/configRoutes");
 const usuarioRoutes = require("./routes/usuarioRoutes");
 const materialRoutes = require("./routes/materialRoutes");
+const certificadoRoutes = require("./routes/certificadoRoutes");
 const path = require("path");
 
 const app = express();
@@ -24,6 +25,11 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/usuarios", usuarioRoutes);
 app.use("/api/materiales", materialRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/api/certificados", certificadoRoutes);
+app.use(
+  "/uploads/certificados",
+  express.static(path.join(__dirname, "uploads/certificados")),
+);
 
 // Ruta de prueba
 app.get("/", (req, res) => {

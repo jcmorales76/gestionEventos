@@ -31,7 +31,6 @@ const fileFilter = (req, file, cb) => {
   const extname = allowedTypes.test(
     path.extname(file.originalname).toLowerCase(),
   );
-  const mimetype = file.mimetype;
 
   if (extname) {
     cb(null, true);
@@ -46,8 +45,8 @@ const upload = multer({
   fileFilter: fileFilter,
 });
 
-// Obtener materiales de un evento
-exports.getMaterialesByEvento = async (req, res) => {
+// ✅ Obtener materiales de un evento
+const getMaterialesByEvento = async (req, res) => {
   try {
     const { eventoId } = req.params;
     const [materiales] = await pool.query(
@@ -71,8 +70,8 @@ exports.getMaterialesByEvento = async (req, res) => {
   }
 };
 
-// Subir material
-exports.uploadMaterial = async (req, res) => {
+// ✅ Subir material
+const uploadMaterial = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "No se subió ningún archivo" });
@@ -116,8 +115,8 @@ exports.uploadMaterial = async (req, res) => {
   }
 };
 
-// Eliminar material
-exports.deleteMaterial = async (req, res) => {
+// ✅ Eliminar material
+const deleteMaterial = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -149,24 +148,15 @@ exports.deleteMaterial = async (req, res) => {
   }
 };
 
-// Crear sesión (solo registrar, no requiere archivo)
-exports.crearSesion = async (req, res) => {
+// ✅ Crear sesión
+const crearSesion = async (req, res) => {
   try {
     const { eventoId, sesion } = req.body;
 
-    // Verificar si ya existe
-    const [existing] = await pool.query(
-      "SELECT * FROM materiales WHERE evento_id = ? AND sesion = ? LIMIT 1",
-      [eventoId, sesion],
+    await pool.query(
+      "INSERT INTO materiales (evento_id, sesion, nombre_original, nombre_archivo, tipo_archivo, tamaño, descripcion, url_descarga) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      [eventoId, sesion, "", "", "", 0, "", ""],
     );
-
-    if (existing.length === 0) {
-      // Crear un registro dummy para la sesión
-      await pool.query(
-        "INSERT INTO materiales (evento_id, sesion, nombre_original, nombre_archivo, tipo_archivo, tamaño, descripcion, url_descarga) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        [eventoId, sesion, "", "", "", 0, "", ""],
-      );
-    }
 
     res.json({ message: "Sesión creada exitosamente" });
   } catch (error) {
@@ -175,12 +165,12 @@ exports.crearSesion = async (req, res) => {
   }
 };
 
-// Obtener todas las sesiones de un evento
-exports.getSesionesByEvento = async (req, res) => {
+// ✅ Obtener sesiones de un evento
+const getSesionesByEvento = async (req, res) => {
   try {
     const { eventoId } = req.params;
     const [sesiones] = await pool.query(
-      "SELECT DISTINCT sesion FROM materiales WHERE evento_id = ? ORDER BY sesion",
+      'SELECT DISTINCT sesion FROM materiales WHERE evento_id = ? AND sesion != "" ORDER BY sesion',
       [eventoId],
     );
 
@@ -191,6 +181,7 @@ exports.getSesionesByEvento = async (req, res) => {
   }
 };
 
+// ✅ EXPORTAR TODAS LAS FUNCIONES
 module.exports = {
   upload,
   getMaterialesByEvento,
