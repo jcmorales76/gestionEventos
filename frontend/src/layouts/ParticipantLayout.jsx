@@ -8,8 +8,35 @@ export default function ParticipantLayout() {
   const navigate = useNavigate();
   const [activeMenu, setActiveMenu] = useState("mis-eventos");
 
+  // ✅ NUEVO: Estados para logo y configuración
+  const [systemLogo, setSystemLogo] = useState(null);
+  const [systemName, setSystemName] = useState("FEPCMAC");
+
   // Si no hay usuario, mandar al login
   if (!user) return <Navigate to="/login" replace />;
+
+  // ✅ NUEVO: Cargar logo y nombre del sistema
+  useEffect(() => {
+    const fetchSystemConfig = async () => {
+      try {
+        const logoRes = await fetch("http://localhost:5000/api/config/logo");
+        const logoData = await logoRes.json();
+        if (logoData.logoUrl) {
+          setSystemLogo(`http://localhost:5000${logoData.logoUrl}`);
+        }
+
+        const configRes = await fetch("http://localhost:5000/api/config");
+        const configData = await configRes.json();
+        if (configData.nombre_sistema?.valor) {
+          setSystemName(configData.nombre_sistema.valor);
+        }
+      } catch (error) {
+        console.error("Error cargando configuración:", error);
+      }
+    };
+
+    fetchSystemConfig();
+  }, []);
 
   // Sincronizar el menú activo con la ruta actual
   useEffect(() => {
@@ -37,7 +64,7 @@ export default function ParticipantLayout() {
     {
       id: "mis-certificados",
       label: "Mis Certificados",
-      icon: "📜",
+      icon: "🎓",
       path: "/portal/certificados",
     },
     { id: "mi-perfil", label: "Mi Perfil", icon: "👤", path: "/portal/perfil" },
@@ -51,13 +78,23 @@ export default function ParticipantLayout() {
     <div className="flex h-screen overflow-hidden bg-gray-50">
       {/* Sidebar Participante */}
       <aside className="w-64 bg-slate-900 text-white flex-shrink-0 flex flex-col">
-        {/* Logo */}
+        {/* Logo - ✅ MEJORADO: Logo dinámico */}
         <div className="p-6 flex items-center gap-3 border-b border-slate-800">
-          <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center font-bold">
-            F
-          </div>
-          <div>
-            <span className="font-bold text-lg">FEPCMAC</span>
+          {systemLogo ? (
+            <img
+              src={systemLogo}
+              alt="Logo"
+              className="h-10 w-auto object-contain rounded-lg"
+            />
+          ) : (
+            <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center font-bold">
+              F
+            </div>
+          )}
+          <div className="min-w-0">
+            <span className="font-bold text-lg block leading-tight truncate">
+              {systemName}
+            </span>
             <span className="text-xs text-slate-400 block">Portal Alumno</span>
           </div>
         </div>
@@ -114,7 +151,6 @@ export default function ParticipantLayout() {
         </header>
 
         <main className="flex-1 overflow-y-auto p-6">
-          {/* Aquí se renderizan las páginas del participante */}
           <Outlet />
         </main>
       </div>

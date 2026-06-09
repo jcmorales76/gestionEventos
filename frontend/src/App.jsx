@@ -18,19 +18,19 @@ import Dashboard from "./pages/Dashboard";
 import Eventos from "./pages/Eventos";
 import Participantes from "./pages/Participantes";
 import Materiales from "./pages/Materiales";
-import Certificados from "./pages/Certificados";
+import Certificados from "./pages/Certificados"; // ✅ Panel Admin
 import Usuarios from "./pages/Usuarios";
 import Reportes from "./pages/Reportes";
 import Importacion from "./pages/Importacion";
 import Configuracion from "./pages/Configuracion";
+import MisCertificados from "./pages/MisCertificados"; // ✅ Portal Participante (AGREGADO)
+
 import ModalConfirmacionPersonalizada from "./components/ModalConfirmacionPersonalizada";
-import Certificados from "./pages/Certificados";
 
 // Layouts y Portal Participante
 import ParticipantLayout from "./layouts/ParticipantLayout";
 import MisEventos from "./pages/MisEventos";
 import MisMateriales from "./pages/MisMateriales";
-import MisCertificados from "./pages/MisCertificados";
 import MiPerfil from "./pages/MiPerfil";
 
 // Layout Privado para Admin
@@ -202,30 +202,28 @@ function App() {
       <Routes>
         {/* Ruta Pública */}
         <Route path="/login" element={<Login />} />
-
-        {/* Rutas Privadas de Admin */}
+        // Rutas Privadas de Admin
         <Route element={<PrivateLayout />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/eventos" element={<Eventos />} />
           <Route path="/participantes" element={<Participantes />} />
           <Route path="/materiales" element={<Materiales />} />
-          <Route path="/certificados" element={<Certificados />} />
+          <Route path="/certificados" element={<Certificados />} /> // ✅ Admin
           <Route path="/usuarios" element={<Usuarios />} />
           <Route path="/reportes" element={<Reportes />} />
           <Route path="/importacion" element={<Importacion />} />
           <Route path="/configuracion" element={<Configuracion />} />
-          <Route path="/certificados" element={<Certificados />} />
+          {/* ✅ ELIMINAR la línea duplicada de /certificados */}
         </Route>
-
-        {/* Rutas del Portal de Participantes */}
+        // Rutas del Portal de Participantes
         <Route element={<ParticipantLayout />}>
           <Route path="/portal" element={<MisEventos />} />
           <Route path="/portal/materiales" element={<MisMateriales />} />
-          <Route path="/portal/certificados" element={<MisCertificados />} />
+          <Route path="/portal/certificados" element={<MisCertificados />} /> //
+          ✅ Participante
           <Route path="/portal/perfil" element={<MiPerfil />} />
         </Route>
-
         {/* Ruta Fallback */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

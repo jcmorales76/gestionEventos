@@ -34,13 +34,20 @@ export default function Certificados() {
     if (!eventoSeleccionado) return;
     setLoading(true);
     try {
+      // ✅ Endpoint correcto: obtener inscripciones con datos de usuarios
       const res = await fetch(
         `http://localhost:5000/api/inscripciones/evento/${eventoSeleccionado}`,
       );
       const data = await res.json();
-      setInscripciones(data);
+
+      // Si data es un objeto con propiedades, convertir a array
+      const inscripcionesArray = Array.isArray(data)
+        ? data
+        : Object.values(data);
+      setInscripciones(inscripcionesArray);
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error cargando inscripciones:", error);
+      setInscripciones([]); // Evitar error con .map()
     } finally {
       setLoading(false);
     }
@@ -49,13 +56,20 @@ export default function Certificados() {
   const fetchCertificados = async () => {
     if (!eventoSeleccionado) return;
     try {
+      // ✅ Endpoint correcto: obtener certificados del evento
       const res = await fetch(
         `http://localhost:5000/api/certificados/evento/${eventoSeleccionado}`,
       );
       const data = await res.json();
-      setCertificados(data);
+
+      // Si data es un objeto con propiedades, convertir a array
+      const certificadosArray = Array.isArray(data)
+        ? data
+        : Object.values(data);
+      setCertificados(certificadosArray);
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error cargando certificados:", error);
+      setCertificados([]); // Evitar error con .map()
     }
   };
 

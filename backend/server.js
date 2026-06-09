@@ -7,6 +7,7 @@ const configRoutes = require("./routes/configRoutes");
 const usuarioRoutes = require("./routes/usuarioRoutes");
 const materialRoutes = require("./routes/materialRoutes");
 const certificadoRoutes = require("./routes/certificadoRoutes");
+const inscripcionRoutes = require("./routes/inscripcionRoutes");
 const path = require("path");
 
 const app = express();
