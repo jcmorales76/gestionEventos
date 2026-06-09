@@ -5,7 +5,7 @@ const PDFDocument = require("pdfkit");
 const pool = require("../config/db");
 
 // ============================================
-// CONFIGURACIÓN DE SUBIDA
+// CONFIGURACIÓN DE MULTER (DEBE IR PRIMERO)
 // ============================================
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -198,6 +198,13 @@ exports.generarCertificadoConPlantilla = async (req, res) => {
     }
 
     const plantilla = plantillas[0];
+    const imagePath = path.join(__dirname, "..", plantilla.url_plantilla);
+
+    if (!fs.existsSync(imagePath)) {
+      return res
+        .status(404)
+        .json({ message: "Archivo de plantilla no encontrado" });
+    }
 
     // Crear directorio de salida
     const uploadDir = path.join(__dirname, "../uploads/certificados");
@@ -219,14 +226,11 @@ exports.generarCertificadoConPlantilla = async (req, res) => {
     const stream = fs.createWriteStream(filePath);
     doc.pipe(stream);
 
-    // Cargar imagen de fondo
-    const imagePath = path.join(__dirname, "..", plantilla.url_plantilla);
-    if (fs.existsSync(imagePath)) {
-      doc.image(imagePath, 0, 0, {
-        width: doc.page.width,
-        height: doc.page.height,
-      });
-    }
+    // Dibujar imagen de fondo
+    doc.image(imagePath, 0, 0, {
+      width: doc.page.width,
+      height: doc.page.height,
+    });
 
     // Función para convertir porcentaje a puntos PDF
     const toX = (percent) => (percent / 100) * doc.page.width;
@@ -244,7 +248,7 @@ exports.generarCertificadoConPlantilla = async (req, res) => {
         { align: "center", width: 400 },
       );
 
-    // TEMA (opcional)
+    // TEMA
     if (inscripcion.tema) {
       doc
         .fontSize(14)
@@ -330,6 +334,9 @@ exports.generarCertificadoConPlantilla = async (req, res) => {
   }
 };
 
+// ============================================
+// EXPORTAR TODAS LAS FUNCIONES
+// ============================================
 module.exports = {
   upload,
   uploadPlantilla,
