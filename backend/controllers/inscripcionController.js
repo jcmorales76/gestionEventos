@@ -1,12 +1,12 @@
 const pool = require("../config/db");
 
-// Obtener todas las inscripciones (con datos de usuario y evento)
+// Obtener todas las inscripciones
 exports.getInscripciones = async (req, res) => {
   try {
     const [inscripciones] = await pool.query(`
       SELECT i.*, 
              u.nombre, u.apellido, u.email,
-             e.nombre as evento_nombre, e.tipo as evento_tipo
+             e.nombre as evento_nombre
       FROM inscripciones i
       LEFT JOIN usuarios u ON i.usuario_id = u.id
       LEFT JOIN eventos e ON i.evento_id = e.id
@@ -19,7 +19,7 @@ exports.getInscripciones = async (req, res) => {
   }
 };
 
-// ✅ Obtener inscripciones de un evento específico (Usado por Certificados)
+// Obtener inscripciones de un evento específico
 exports.getInscripcionesByEvento = async (req, res) => {
   try {
     const { eventoId } = req.params;
@@ -39,22 +39,14 @@ exports.getInscripcionesByEvento = async (req, res) => {
     res.json(inscripciones);
   } catch (error) {
     console.error("Error al obtener inscripciones del evento:", error);
-    res
-      .status(500)
-      .json({ message: "Error al obtener inscripciones del evento" });
+    res.status(500).json({ message: "Error al obtener inscripciones" });
   }
 };
 
-// Crear nueva inscripción
+// Crear inscripción
 exports.createInscripcion = async (req, res) => {
   try {
     const { usuario_id, evento_id, estado, progreso, calidad } = req.body;
-
-    if (!usuario_id || !evento_id) {
-      return res
-        .status(400)
-        .json({ message: "usuario_id y evento_id son requeridos" });
-    }
 
     const [result] = await pool.query(
       "INSERT INTO inscripciones (usuario_id, evento_id, estado, progreso, calidad) VALUES (?, ?, ?, ?, ?)",
@@ -69,19 +61,9 @@ exports.createInscripcion = async (req, res) => {
 
     res
       .status(201)
-      .json({
-        id: result.insertId,
-        message: "Inscripción creada exitosamente",
-      });
+      .json({ id: result.insertId, message: "Inscripción creada" });
   } catch (error) {
     console.error("Error al crear inscripción:", error);
-    if (error.code === "ER_DUP_ENTRY") {
-      return res
-        .status(400)
-        .json({
-          message: "Ya existe una inscripción para este usuario en este evento",
-        });
-    }
     res.status(500).json({ message: "Error al crear inscripción" });
   }
 };
@@ -97,10 +79,10 @@ exports.updateInscripcion = async (req, res) => {
       [estado, progreso, calidad, id],
     );
 
-    res.json({ message: "Inscripción actualizada exitosamente" });
+    res.json({ message: "Inscripción actualizada" });
   } catch (error) {
     console.error("Error al actualizar inscripción:", error);
-    res.status(500).json({ message: "Error al actualizar inscripción" });
+    res.status(500).json({ message: "Error al actualizar" });
   }
 };
 
@@ -109,17 +91,9 @@ exports.deleteInscripcion = async (req, res) => {
   try {
     const { id } = req.params;
     await pool.query("DELETE FROM inscripciones WHERE id = ?", [id]);
-    res.json({ message: "Inscripción eliminada exitosamente" });
+    res.json({ message: "Inscripción eliminada" });
   } catch (error) {
     console.error("Error al eliminar inscripción:", error);
-    res.status(500).json({ message: "Error al eliminar inscripción" });
+    res.status(500).json({ message: "Error al eliminar" });
   }
-};
-
-module.exports = {
-  getInscripciones,
-  getInscripcionesByEvento,
-  createInscripcion,
-  updateInscripcion,
-  deleteInscripcion,
 };

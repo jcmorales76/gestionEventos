@@ -24,6 +24,7 @@ import Reportes from "./pages/Reportes";
 import Importacion from "./pages/Importacion";
 import Configuracion from "./pages/Configuracion";
 import MisCertificados from "./pages/MisCertificados"; // ✅ Portal Participante (AGREGADO)
+import ConfigurarPlantilla from "./pages/ConfigurarPlantilla";
 
 import ModalConfirmacionPersonalizada from "./components/ModalConfirmacionPersonalizada";
 
@@ -214,6 +215,10 @@ function App() {
           <Route path="/reportes" element={<Reportes />} />
           <Route path="/importacion" element={<Importacion />} />
           <Route path="/configuracion" element={<Configuracion />} />
+          <Route
+            path="/certificados/configurar/:eventoId"
+            element={<ConfigurarPlantilla />}
+          />
           {/* ✅ ELIMINAR la línea duplicada de /certificados */}
         </Route>
         // Rutas del Portal de Participantes

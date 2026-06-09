@@ -3,214 +3,173 @@ const fs = require("fs");
 const path = require("path");
 const pool = require("../config/db");
 
-// Función auxiliar para crear el PDF
-function crearPDFCertificado(inscripcion, callback) {
-  const nombreCompleto = `${inscripcion.nombre} ${inscripcion.apellido}`;
-  const calidad = inscripcion.calidad || "PARTICIPANTE";
+// ============================================
+// FUNCIÓN AUXILIAR: Crear PDF usando plantilla personalizada
+// ============================================
+async function crearPDFCertificado(inscripcion, callback) {
+  try {
+    const nombreCompleto = `${inscripcion.nombre} ${inscripcion.apellido}`;
+    const calidad = inscripcion.calidad || "PARTICIPANTE";
 
-  // Crear directorio si no existe
-  const uploadDir = path.join(__dirname, "../uploads/certificados");
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-  }
+    // 1. Obtener plantilla de la BD
+    const [plantillas] = await pool.query(
+      "SELECT * FROM plantillas_certificados WHERE evento_id = ?",
+      [inscripcion.evento_id],
+    );
 
-  // Nombre del archivo
-  const fileName = `certificado_${inscripcion.inscripcion_id}_${Date.now()}.pdf`;
-  const filePath = path.join(uploadDir, fileName);
-  const urlPdf = `/uploads/certificados/${fileName}`;
-
-  // Crear PDF
-  const doc = new PDFDocument({
-    size: "A4",
-    layout: "landscape",
-    margins: { top: 0, bottom: 0, left: 0, right: 0 },
-  });
-
-  const stream = fs.createWriteStream(filePath);
-  doc.pipe(stream);
-
-  // Fondo
-  doc.rect(0, 0, doc.page.width, doc.page.height).fill("#fafafa");
-
-  // Bordes decorativos
-  doc
-    .rect(20, 20, doc.page.width - 40, doc.page.height - 40)
-    .lineWidth(3)
-    .stroke("#dc2626");
-  doc
-    .rect(30, 30, doc.page.width - 60, doc.page.height - 60)
-    .lineWidth(1)
-    .stroke("#f97316");
-
-  // Logo SIM
-  doc
-    .fontSize(48)
-    .font("Helvetica-Bold")
-    .fillColor("#dc2626")
-    .text("SIM", 100, 100, { align: "center" });
-  doc
-    .fontSize(24)
-    .fillColor("#1f2937")
-    .text("AREQUIPA 2026", 100, 150, { align: "center" });
-
-  // Título
-  doc
-    .fontSize(28)
-    .font("Helvetica-Bold")
-    .fillColor("#1f2937")
-    .text("Seminario Internacional", doc.page.width / 2, 100, {
-      align: "center",
-    });
-  doc
-    .fontSize(24)
-    .text("de Microfinanzas", doc.page.width / 2, 130, { align: "center" });
-
-  // Línea decorativa
-  doc
-    .moveTo(200, 180)
-    .lineTo(doc.page.width - 200, 180)
-    .lineWidth(2)
-    .stroke("#dc2626");
-
-  // CERTIFICAN QUE
-  doc
-    .fontSize(20)
-    .font("Helvetica-Bold")
-    .fillColor("#374151")
-    .text("CERTIFICAN QUE:", doc.page.width / 2, 220, { align: "center" });
-
-  // Nombre
-  doc
-    .fontSize(32)
-    .font("Helvetica-Bold")
-    .fillColor("#dc2626")
-    .text(nombreCompleto.toUpperCase(), doc.page.width / 2, 270, {
-      align: "center",
-    });
-
-  // Ha participado
-  doc
-    .fontSize(16)
-    .font("Helvetica")
-    .fillColor("#374151")
-    .text("Ha participado en el", doc.page.width / 2, 330, { align: "center" });
-
-  doc
-    .fontSize(22)
-    .font("Helvetica-Bold")
-    .text(inscripcion.evento_nombre, doc.page.width / 2, 360, {
-      align: "center",
-    });
-
-  // Tema
-  if (inscripcion.evento_nombre.toLowerCase().includes("inteligencia")) {
-    doc
-      .fontSize(14)
-      .font("Helvetica-Oblique")
-      .text(
-        '"Cuando la inteligencia artificial amplifica lo humano, el valor se multiplica: Marcas con propósito al servicio de las personas"',
-        doc.page.width / 2,
-        395,
-        { align: "center", width: 700 },
+    if (plantillas.length === 0) {
+      return callback(
+        new Error("No hay plantilla configurada para este evento"),
+        null,
       );
-  }
+    }
 
-  // Duración
-  doc
-    .fontSize(16)
-    .font("Helvetica")
-    .text(
-      `Con una duración de ${inscripcion.horas_academicas || 24} horas académicas`,
-      doc.page.width / 2,
-      440,
-      { align: "center" },
-    );
+    const p = plantillas[0];
+    const imagePath = path.join(__dirname, "..", p.url_plantilla);
 
-  // Calidad
-  doc
-    .fontSize(24)
-    .font("Helvetica-Bold")
-    .fillColor("#dc2626")
-    .text("En calidad de:", doc.page.width / 2, 480, { align: "center" });
-  doc
-    .fontSize(28)
-    .font("Helvetica-Bold")
-    .text(calidad.toUpperCase(), doc.page.width / 2, 515, { align: "center" });
+    if (!fs.existsSync(imagePath)) {
+      return callback(new Error("Archivo de plantilla no encontrado"), null);
+    }
 
-  // Fecha y lugar
-  let fechaFormateada = "Por definir";
-  if (inscripcion.fecha_inicio) {
-    const fechaInicio = new Date(inscripcion.fecha_inicio);
-    fechaFormateada = fechaInicio.toLocaleDateString("es-ES", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
+    // 2. Crear directorio de salida
+    const uploadDir = path.join(__dirname, "../uploads/certificados");
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    const fileName = `certificado_${inscripcion.inscripcion_id}_${Date.now()}.pdf`;
+    const filePath = path.join(uploadDir, fileName);
+    const urlPdf = `/uploads/certificados/${fileName}`;
+
+    // 3. Crear PDF A4 horizontal (841.89 x 595.28 points)
+    const doc = new PDFDocument({
+      size: "A4",
+      layout: "landscape",
+      margins: { top: 0, bottom: 0, left: 0, right: 0 },
     });
+
+    const stream = fs.createWriteStream(filePath);
+    doc.pipe(stream);
+
+    // 4. Dibujar imagen de fondo (plantilla)
+    doc.image(imagePath, 0, 0, {
+      width: doc.page.width,
+      height: doc.page.height,
+    });
+
+    // 5. Función para convertir porcentaje a puntos PDF
+    const toX = (percent) => (percent / 100) * doc.page.width;
+    const toY = (percent) => (percent / 100) * doc.page.height;
+
+    // 6. Superponer textos en las coordenadas guardadas
+
+    // NOMBRE DEL PARTICIPANTE
+    doc
+      .fontSize(p.font_size_nombre || 24)
+      .font("Helvetica-Bold")
+      .fillColor(p.color_nombre || "#1e3a8a")
+      .text(
+        nombreCompleto.toUpperCase(),
+        toX(p.pos_nombre_x),
+        toY(p.pos_nombre_y),
+        { align: "center", width: 400 },
+      );
+
+    // TEMA DEL EVENTO (opcional)
+    if (inscripcion.tema) {
+      doc
+        .fontSize(14)
+        .font("Helvetica-Oblique")
+        .fillColor("#3b82f6")
+        .text(`"${inscripcion.tema}"`, toX(p.pos_tema_x), toY(p.pos_tema_y), {
+          align: "center",
+          width: 500,
+        });
+    }
+
+    // CALIDAD (EXPOSITOR, PARTICIPANTE, ORGANIZADOR)
+    doc
+      .fontSize(p.font_size_calidad || 18)
+      .font("Helvetica-Bold")
+      .fillColor(p.color_calidad || "#1e3a8a")
+      .text(calidad.toUpperCase(), toX(p.pos_calidad_x), toY(p.pos_calidad_y), {
+        align: "center",
+        width: 300,
+      });
+
+    // FECHA Y LUGAR
+    const fechaFormateada = inscripcion.fecha_inicio
+      ? new Date(inscripcion.fecha_inicio).toLocaleDateString("es-ES", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
+      : "22, 23 y 24 de abril del 2026";
+
+    doc
+      .fontSize(12)
+      .font("Helvetica")
+      .fillColor("#000000")
+      .text(
+        `Realizado el ${fechaFormateada} en la ciudad de Arequipa, Perú.`,
+        toX(p.pos_fecha_x),
+        toY(p.pos_fecha_y),
+        { align: "center", width: 500 },
+      );
+
+    doc.end();
+
+    // 7. Guardar en BD cuando termine el stream
+    stream.on("finish", async () => {
+      try {
+        await pool.query(
+          `INSERT INTO certificados (evento_id, inscripcion_id, tipo, nombre_participante, url_pdf)
+           VALUES (?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE url_pdf = ?, tipo = ?`,
+          [
+            inscripcion.evento_id,
+            inscripcion.inscripcion_id,
+            calidad,
+            nombreCompleto,
+            urlPdf,
+            urlPdf,
+            calidad,
+          ],
+        );
+
+        callback(null, { urlPdf, fileName });
+      } catch (dbError) {
+        console.error("Error BD:", dbError);
+        callback(dbError, null);
+      }
+    });
+
+    stream.on("error", (error) => {
+      console.error("Error PDF:", error);
+      callback(error, null);
+    });
+  } catch (error) {
+    console.error("Error en crearPDFCertificado:", error);
+    callback(error, null);
   }
-
-  doc
-    .fontSize(14)
-    .font("Helvetica")
-    .fillColor("#374151")
-    .text(
-      `Realizado el ${fechaFormateada} en la ciudad de ${inscripcion.lugar || "Arequipa"}, Perú.`,
-      doc.page.width / 2,
-      570,
-      { align: "center", width: 700 },
-    );
-
-  const fechaEmision = new Date().toLocaleDateString("es-ES", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-  doc.fontSize(12).text(`Arequipa, ${fechaEmision}`, doc.page.width / 2, 600, {
-    align: "center",
-  });
-
-  // Firmas
-  doc
-    .moveTo(doc.page.width / 2 - 150, 650)
-    .lineTo(doc.page.width / 2 - 50, 650)
-    .lineWidth(1)
-    .stroke("#374151");
-  doc
-    .moveTo(doc.page.width / 2 + 50, 650)
-    .lineTo(doc.page.width / 2 + 150, 650)
-    .stroke("#374151");
-
-  doc.fontSize(11).text("Director del Evento", doc.page.width / 2 - 100, 660, {
-    align: "center",
-  });
-  doc.text("Coordinador Académico", doc.page.width / 2 + 100, 660, {
-    align: "center",
-  });
-
-  doc.end();
-
-  stream.on("finish", () => callback(null, { urlPdf, fileName }));
-  stream.on("error", (error) => callback(error, null));
 }
 
 // ============================================
-// EXPORTAR FUNCIONES
+// 1. GENERAR CERTIFICADO INDIVIDUAL
 // ============================================
-
-// Generar certificado individual
 exports.generarCertificado = async (req, res) => {
   try {
     const { inscripcionId } = req.params;
 
     const [inscripciones] = await pool.query(
-      `
-      SELECT i.*, u.nombre, u.apellido, u.email,
+      `SELECT i.id as inscripcion_id, i.evento_id, i.calidad,
+             u.nombre, u.apellido, u.email,
              e.nombre as evento_nombre, e.tipo, e.fecha_inicio, e.fecha_fin,
-             e.horas_academicas, e.lugar
+             e.horas_academicas, e.lugar, e.tema
       FROM inscripciones i
       INNER JOIN usuarios u ON i.usuario_id = u.id
       INNER JOIN eventos e ON i.evento_id = e.id
-      WHERE i.id = ?
-    `,
+      WHERE i.id = ?`,
       [inscripcionId],
     );
 
@@ -220,41 +179,19 @@ exports.generarCertificado = async (req, res) => {
 
     const inscripcion = inscripciones[0];
 
-    crearPDFCertificado(inscripcion, async (error, result) => {
+    crearPDFCertificado(inscripcion, (error, result) => {
       if (error) {
         console.error("Error al crear PDF:", error);
         return res
           .status(500)
-          .json({ message: "Error al crear el certificado" });
+          .json({ message: error.message || "Error al crear el certificado" });
       }
 
-      try {
-        await pool.query(
-          `
-          INSERT INTO certificados (evento_id, inscripcion_id, tipo, nombre_participante, url_pdf)
-          VALUES (?, ?, ?, ?, ?)
-          ON DUPLICATE KEY UPDATE url_pdf = ?, tipo = ?
-        `,
-          [
-            inscripcion.evento_id,
-            inscripcionId,
-            inscripcion.calidad || "PARTICIPANTE",
-            `${inscripcion.nombre} ${inscripcion.apellido}`,
-            result.urlPdf,
-            result.urlPdf,
-            inscripcion.calidad || "PARTICIPANTE",
-          ],
-        );
-
-        res.json({
-          message: "Certificado generado",
-          url: result.urlPdf,
-          fileName: result.fileName,
-        });
-      } catch (dbError) {
-        console.error("Error BD:", dbError);
-        res.status(500).json({ message: "Error al guardar" });
-      }
+      res.json({
+        message: "Certificado generado",
+        url: result.urlPdf,
+        fileName: result.fileName,
+      });
     });
   } catch (error) {
     console.error("Error:", error);
@@ -262,20 +199,21 @@ exports.generarCertificado = async (req, res) => {
   }
 };
 
-// Generar certificados masivos
+// ============================================
+// 2. GENERAR CERTIFICADOS MASIVOS
+// ============================================
 exports.generarCertificadosMasivos = async (req, res) => {
   try {
     const { eventoId } = req.params;
 
     const [inscripciones] = await pool.query(
-      `
-      SELECT i.id as inscripcion_id, i.calidad, u.nombre, u.apellido,
-             e.nombre as evento_nombre, e.horas_academicas, e.lugar, e.fecha_inicio
+      `SELECT i.id as inscripcion_id, i.evento_id, i.calidad,
+             u.nombre, u.apellido,
+             e.nombre as evento_nombre, e.horas_academicas, e.lugar, e.fecha_inicio, e.tema
       FROM inscripciones i
       INNER JOIN usuarios u ON i.usuario_id = u.id
       INNER JOIN eventos e ON i.evento_id = e.id
-      WHERE i.evento_id = ?
-    `,
+      WHERE i.evento_id = ?`,
       [eventoId],
     );
 
@@ -289,30 +227,9 @@ exports.generarCertificadosMasivos = async (req, res) => {
     for (const inscripcion of inscripciones) {
       try {
         const resultado = await new Promise((resolve, reject) => {
-          crearPDFCertificado(inscripcion, async (error, result) => {
+          crearPDFCertificado(inscripcion, (error, result) => {
             if (error) reject(error);
-            else {
-              try {
-                await pool.query(
-                  `
-                  INSERT INTO certificados (evento_id, inscripcion_id, tipo, nombre_participante, url_pdf)
-                  VALUES (?, ?, ?, ?, ?)
-                  ON DUPLICATE KEY UPDATE url_pdf = ?
-                `,
-                  [
-                    eventoId,
-                    inscripcion.inscripcion_id,
-                    inscripcion.calidad || "PARTICIPANTE",
-                    `${inscripcion.nombre} ${inscripcion.apellido}`,
-                    result.urlPdf,
-                    result.urlPdf,
-                  ],
-                );
-                resolve(result);
-              } catch (dbError) {
-                reject(dbError);
-              }
-            }
+            else resolve(result);
           });
         });
 
@@ -323,7 +240,7 @@ exports.generarCertificadosMasivos = async (req, res) => {
           url: resultado.urlPdf,
         });
       } catch (error) {
-        console.error(`Error con ${inscripcion.nombre}:`, error);
+        console.error(`Error con ${inscripcion.nombre}:`, error.message);
       }
     }
 
@@ -337,20 +254,20 @@ exports.generarCertificadosMasivos = async (req, res) => {
   }
 };
 
-// Obtener certificados por participante
+// ============================================
+// 3. OBTENER CERTIFICADOS POR PARTICIPANTE (PORTAL)
+// ============================================
 exports.getCertificadosByParticipante = async (req, res) => {
   try {
     const { usuarioId } = req.params;
 
     const [certificados] = await pool.query(
-      `
-      SELECT c.*, e.nombre as evento_nombre, e.tipo, e.fecha_fin
-      FROM certificados c
-      INNER JOIN inscripciones i ON c.inscripcion_id = i.id
-      INNER JOIN eventos e ON c.evento_id = e.id
-      WHERE i.usuario_id = ?
-      ORDER BY c.fecha_generacion DESC
-    `,
+      `SELECT c.*, e.nombre as evento_nombre, e.tipo, e.fecha_fin, e.horas_academicas
+       FROM certificados c
+       INNER JOIN inscripciones i ON c.inscripcion_id = i.id
+       INNER JOIN eventos e ON c.evento_id = e.id
+       WHERE i.usuario_id = ?
+       ORDER BY c.fecha_generacion DESC`,
       [usuarioId],
     );
 
@@ -361,19 +278,46 @@ exports.getCertificadosByParticipante = async (req, res) => {
   }
 };
 
-// Verificar eventos finalizados
+// ============================================
+// 4. OBTENER CERTIFICADOS POR EVENTO (PANEL ADMIN)
+// ============================================
+exports.getCertificadosByEvento = async (req, res) => {
+  try {
+    const { eventoId } = req.params;
+
+    const [certificados] = await pool.query(
+      `SELECT c.*, i.usuario_id,
+             u.nombre, u.apellido, u.email
+       FROM certificados c
+       INNER JOIN inscripciones i ON c.inscripcion_id = i.id
+       INNER JOIN usuarios u ON i.usuario_id = u.id
+       WHERE c.evento_id = ?
+       ORDER BY c.fecha_generacion DESC`,
+      [eventoId],
+    );
+
+    res.json(certificados);
+  } catch (error) {
+    console.error("Error al obtener certificados del evento:", error);
+    res
+      .status(500)
+      .json({ message: "Error al obtener certificados del evento" });
+  }
+};
+
+// ============================================
+// 5. VERIFICAR EVENTOS FINALIZADOS
+// ============================================
 exports.verificarEventosFinalizados = async (req, res) => {
   try {
     const ahora = new Date();
 
     const [eventos] = await pool.query(
-      `
-      SELECT DISTINCT e.id, e.nombre, e.fecha_fin
-      FROM eventos e
-      INNER JOIN inscripciones i ON e.id = i.evento_id
-      LEFT JOIN certificados c ON e.id = c.evento_id
-      WHERE e.fecha_fin < ? AND c.id IS NULL
-    `,
+      `SELECT DISTINCT e.id, e.nombre, e.fecha_fin
+       FROM eventos e
+       INNER JOIN inscripciones i ON e.id = i.evento_id
+       LEFT JOIN certificados c ON e.id = c.evento_id
+       WHERE e.fecha_fin < ? AND c.id IS NULL`,
       [ahora],
     );
 
@@ -384,19 +328,19 @@ exports.verificarEventosFinalizados = async (req, res) => {
   }
 };
 
-// Generación automática
+// ============================================
+// 6. GENERACIÓN AUTOMÁTICA
+// ============================================
 exports.generarCertificadosAutomaticos = async (req, res) => {
   try {
     const ahora = new Date();
 
     const [eventos] = await pool.query(
-      `
-      SELECT DISTINCT e.id, e.nombre
-      FROM eventos e
-      INNER JOIN inscripciones i ON e.id = i.evento_id
-      LEFT JOIN certificados c ON e.id = c.evento_id
-      WHERE e.fecha_fin < ? AND c.id IS NULL
-    `,
+      `SELECT DISTINCT e.id, e.nombre
+       FROM eventos e
+       INNER JOIN inscripciones i ON e.id = i.evento_id
+       LEFT JOIN certificados c ON e.id = c.evento_id
+       WHERE e.fecha_fin < ? AND c.id IS NULL`,
       [ahora],
     );
 
@@ -404,47 +348,27 @@ exports.generarCertificadosAutomaticos = async (req, res) => {
 
     for (const evento of eventos) {
       const [inscripciones] = await pool.query(
-        `
-        SELECT i.id as inscripcion_id, i.calidad, u.nombre, u.apellido,
-               e.nombre as evento_nombre, e.horas_academicas, e.lugar, e.fecha_inicio
+        `SELECT i.id as inscripcion_id, i.evento_id, i.calidad,
+               u.nombre, u.apellido,
+               e.nombre as evento_nombre, e.horas_academicas, e.lugar, e.fecha_inicio, e.tema
         FROM inscripciones i
         INNER JOIN usuarios u ON i.usuario_id = u.id
         INNER JOIN eventos e ON i.evento_id = e.id
-        WHERE i.evento_id = ?
-      `,
+        WHERE i.evento_id = ?`,
         [evento.id],
       );
 
       for (const inscripcion of inscripciones) {
         try {
           await new Promise((resolve, reject) => {
-            crearPDFCertificado(inscripcion, async (error, result) => {
+            crearPDFCertificado(inscripcion, (error) => {
               if (error) reject(error);
-              else {
-                try {
-                  await pool.query(
-                    `
-                    INSERT INTO certificados (evento_id, inscripcion_id, tipo, nombre_participante, url_pdf)
-                    VALUES (?, ?, ?, ?, ?)
-                  `,
-                    [
-                      evento.id,
-                      inscripcion.inscripcion_id,
-                      inscripcion.calidad || "PARTICIPANTE",
-                      `${inscripcion.nombre} ${inscripcion.apellido}`,
-                      result.urlPdf,
-                    ],
-                  );
-                  resolve();
-                } catch (dbError) {
-                  reject(dbError);
-                }
-              }
+              else resolve();
             });
           });
           totalGenerados++;
         } catch (error) {
-          console.error(`Error con ${inscripcion.nombre}:`, error);
+          console.error(`Error con ${inscripcion.nombre}:`, error.message);
         }
       }
     }
@@ -457,29 +381,5 @@ exports.generarCertificadosAutomaticos = async (req, res) => {
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ message: "Error en generación automática" });
-  }
-};
-
-// Obtener certificados de un evento
-exports.getCertificadosByEvento = async (req, res) => {
-  try {
-    const { eventoId } = req.params;
-
-    const [certificados] = await pool.query(
-      `
-      SELECT c.*, i.usuario_id, u.nombre, u.apellido, u.email
-      FROM certificados c
-      INNER JOIN inscripciones i ON c.inscripcion_id = i.id
-      INNER JOIN usuarios u ON i.usuario_id = u.id
-      WHERE c.evento_id = ?
-      ORDER BY c.fecha_generacion DESC
-    `,
-      [eventoId],
-    );
-
-    res.json(certificados);
-  } catch (error) {
-    console.error("Error al obtener certificados:", error);
-    res.status(500).json({ message: "Error al obtener certificados" });
   }
 };

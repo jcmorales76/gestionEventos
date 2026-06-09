@@ -9,7 +9,7 @@ const {
 } = require("../controllers/inscripcionController");
 
 router.get("/", getInscripciones);
-router.get("/evento/:eventoId", getInscripcionesByEvento); // ✅ Ruta clave para Certificados
+router.get("/evento/:eventoId", getInscripcionesByEvento);
 router.post("/", createInscripcion);
 router.put("/:id", updateInscripcion);
 router.delete("/:id", deleteInscripcion);

@@ -8,6 +8,7 @@ const usuarioRoutes = require("./routes/usuarioRoutes");
 const materialRoutes = require("./routes/materialRoutes");
 const certificadoRoutes = require("./routes/certificadoRoutes");
 const inscripcionRoutes = require("./routes/inscripcionRoutes");
+const plantillaRoutes = require("./routes/plantillaRoutes");
 const path = require("path");
 
 const app = express();
@@ -30,6 +31,11 @@ app.use("/api/certificados", certificadoRoutes);
 app.use(
   "/uploads/certificados",
   express.static(path.join(__dirname, "uploads/certificados")),
+);
+app.use("/api/plantillas", plantillaRoutes);
+app.use(
+  "/uploads/plantillas",
+  express.static(path.join(__dirname, "uploads/plantillas")),
 );
 
 // Ruta de prueba
