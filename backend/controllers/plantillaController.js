@@ -91,8 +91,8 @@ exports.generarCertificadoConPlantilla = async (req, res) => {
     
     doc.image(imgPath, 0, 0, { width: doc.page.width, height: doc.page.height });
     
-    const toX = (pct) => (pct/100) * doc.page.width;  // ✅ CORREGIDO
-    const toY = (pct) => (pct/100) * doc.page.height; // ✅ CORREGIDO
+    const toX = (pct) => (pct/100) * doc.page.width;
+    const toY = (pct) => (pct/100) * doc.page.height;
     
     doc.fontSize(p.font_size_nombre||24).font("Helvetica-Bold").fillColor(p.color_nombre||"#1e3a8a")
        .text(`${insc.nombre} ${insc.apellido}`.toUpperCase(), toX(p.pos_nombre_x), toY(p.pos_nombre_y), { align: "center", width: 400 });
@@ -111,13 +111,13 @@ exports.generarCertificadoConPlantilla = async (req, res) => {
     
     doc.end();
     
-    stream.on("finish", async () => {  // ✅ CORREGIDO
+    stream.on("finish", async () => {
       await pool.query("INSERT INTO certificados (evento_id, inscripcion_id, tipo, nombre_participante, url_pdf) VALUES (?,?,?,?,?) ON DUPLICATE KEY UPDATE url_pdf=?",
         [insc.evento_id, insc.inscripcion_id, insc.calidad||"PARTICIPANTE", `${insc.nombre} ${insc.apellido}`, urlPdf, urlPdf]);
       res.json({ message: "Generado", url: urlPdf, fileName });
     });
     
-    stream.on("error", (err) => {  // ✅ CORREGIDO
+    stream.on("error", (err) => {
       console.error(err);
       res.status(500).json({ message: "Error PDF" });
     });
