@@ -1,10 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const {
-  upload,
-  uploadPlantilla,
-  getPlantillaByEvento,
-} = require("../controllers/plantillaController");
+const { upload, uploadPlantilla, getPlantillaByEvento } =
+  require("../controllers/plantillaController").default;
 
 router.get("/:eventoId", getPlantillaByEvento);
 router.post("/:eventoId", upload.single("imagen"), uploadPlantilla);
