@@ -28,6 +28,7 @@ app.use("/api/usuarios", usuarioRoutes);
 app.use("/api/materiales", materialRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/certificados", certificadoRoutes);
+app.use("/api/inscripciones", inscripcionRoutes);
 app.use(
   "/uploads/certificados",
   express.static(path.join(__dirname, "uploads/certificados")),
