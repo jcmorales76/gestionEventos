@@ -127,8 +127,8 @@ exports.generarCertificadoConPlantilla = async (req, res) => {
 };
 
 module.exports = {
-  upload: upload,
-  uploadPlantilla: uploadPlantilla,
-  getPlantillaByEvento: getPlantillaByEvento,
-  generarCertificadoConPlantilla: generarCertificadoConPlantilla
+  upload,
+  uploadPlantilla: exports.uploadPlantilla,
+  getPlantillaByEvento: exports.getPlantillaByEvento,
+  generarCertificadoConPlantilla: exports.generarCertificadoConPlantilla
 };
