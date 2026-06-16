@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
+
 export default function Certificados() {
   const navigate = useNavigate();
   const [eventos, setEventos] = useState([]);
@@ -68,41 +69,38 @@ export default function Certificados() {
   };
 
   const handleGenerarMasivo = async () => {
-    if (!eventoSeleccionado) return;
+  if (!eventoSeleccionado) return;
+  
+  if (inscripciones.length === 0) {
+    toast.error('No hay participantes inscritos');
+    return;
+  }
 
-    if (inscripciones.length === 0) {
-      toast.error("No hay participantes inscritos");
-      return;
+  const confirmacion = window.confirm(
+    `¿Generar certificados para los ${inscripciones.length} participantes?`
+  );
+  
+  if (!confirmacion) return;
+
+  setGenerando(true);
+  try {
+    const res = await fetch(`http://localhost:5000/api/plantillas/generar-masivo/${eventoSeleccionado}`, {
+      method: 'POST'
+    });
+    
+    const data = await res.json();
+    if (res.ok) {
+      toast.success(`✅ ${data.certificados.length} certificados generados`);
+      fetchCertificados();
+    } else {
+      toast.error(data.message || 'Error al generar');
     }
-
-    const confirmacion = window.confirm(
-      `¿Generar certificados para los ${inscripciones.length} participantes?`,
-    );
-
-    if (!confirmacion) return;
-
-    setGenerando(true);
-    try {
-      const res = await fetch(
-        `http://localhost:5000/api/certificados/generar-masivo/${eventoSeleccionado}`,
-        {
-          method: "POST",
-        },
-      );
-
-      const data = await res.json();
-      if (res.ok) {
-        toast.success(`✅ ${data.certificados.length} certificados generados`);
-        fetchCertificados();
-      } else {
-        toast.error(data.message || "Error al generar");
-      }
-    } catch (error) {
-      toast.error("Error de conexión");
-    } finally {
-      setGenerando(false);
-    }
-  };
+  } catch (error) {
+    toast.error('Error de conexión');
+  } finally {
+    setGenerando(false);
+  }
+};
 
   const handleGenerarIndividual = async (inscripcionId, nombre) => {
     try {

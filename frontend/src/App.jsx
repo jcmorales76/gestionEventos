@@ -215,6 +215,7 @@ function App() {
           <Route path="/reportes" element={<Reportes />} />
           <Route path="/importacion" element={<Importacion />} />
           <Route path="/configuracion" element={<Configuracion />} />
+          <Route path="/certificados/configurar/:eventoId" element={<ConfigurarPlantilla />} />
           <Route
             path="/certificados/configurar/:eventoId"
             element={<ConfigurarPlantilla />}
