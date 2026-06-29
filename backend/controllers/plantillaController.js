@@ -51,7 +51,7 @@ exports.uploadPlantilla = async function(req, res) {
       await pool.query("INSERT INTO plantillas_certificados (evento_id, url_plantilla, pos_nombre_x, pos_nombre_y, pos_tema_x, pos_tema_y, pos_calidad_x, pos_calidad_y, pos_fecha_x, pos_fecha_y, activo_nombre, activo_tema, activo_calidad, activo_fecha) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [eventoId, url, parseFloat(pos_nombre_x)||50, parseFloat(pos_nombre_y)||45, parseFloat(pos_tema_x)||50, parseFloat(pos_tema_y)||55, parseFloat(pos_calidad_x)||50, parseFloat(pos_calidad_y)||70, parseFloat(pos_fecha_x)||50, parseFloat(pos_fecha_y)||85, parseInt(activo_nombre)||1, parseInt(activo_tema)||0, parseInt(activo_calidad)||1, parseInt(activo_fecha)||0]);
     }
 
-    console.log("✅ Plantilla guardada en BD");
+    console.log("✅ Plantilla guardada en BD correctamente");
     res.json({ message: "Plantilla guardada", url: url });
   } catch (error) {
     console.error("❌ Error al guardar:", error);
@@ -82,8 +82,7 @@ exports.generarCertificadoConPlantilla = async function(req, res) {
 
     const p = plantillas[0];
     console.log("=== GENERANDO CERTIFICADO ===");
-    console.log("Coordenadas de BD:", { nombre_x: p.pos_nombre_x, nombre_y: p.pos_nombre_y, calidad_x: p.pos_calidad_x, calidad_y: p.pos_calidad_y });
-    console.log("Activos:", { activo_nombre: p.activo_nombre, activo_calidad: p.activo_calidad });
+    console.log("Coordenadas BD:", { nombre_x: p.pos_nombre_x, nombre_y: p.pos_nombre_y, activo: p.activo_nombre });
 
     const imgPath = path.join(__dirname, "..", p.url_plantilla);
     if (!fs.existsSync(imgPath)) return res.status(404).json({ message: "Imagen no existe" });
@@ -124,7 +123,7 @@ exports.generarCertificadoConPlantilla = async function(req, res) {
       res.status(500).json({ message: "Error PDF" });
     });
   } catch (error) {
-    console.error(" Error:", error);
+    console.error("❌ Error:", error);
     res.status(500).json({ message: "Error: " + error.message });
   }
 };
@@ -136,7 +135,7 @@ exports.generarCertificadosMasivos = async function(req, res) {
     if (inscripciones.length === 0) return res.status(404).json({ message: "No hay inscripciones" });
 
     const [plantillas] = await pool.query("SELECT * FROM plantillas_certificados WHERE evento_id=?", [eventoId]);
-    if (plantillas.length === 0) return res.status(404).json({ message: "No hay plantilla configurada" });
+    if (plantillas.length === 0) return res.status(404).json({ message: "No hay plantilla" });
 
     const p = plantillas[0];
     const imgPath = path.join(__dirname, "..", p.url_plantilla);
@@ -187,7 +186,7 @@ exports.generarCertificadosMasivos = async function(req, res) {
 
     res.json({ message: "Generados " + certificadosGenerados.length + " de " + inscripciones.length + " certificados", certificados: certificadosGenerados });
   } catch (error) {
-    console.error(error);
+    console.error("❌ Error:", error);
     res.status(500).json({ message: "Error al generar masivamente" });
   }
 };

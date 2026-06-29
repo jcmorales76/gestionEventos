@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
+import ModalGeneracion from '../components/ModalGeneracion'
 
 export default function ConfigurarPlantilla() {
   const { eventoId } = useParams()
@@ -13,6 +14,7 @@ export default function ConfigurarPlantilla() {
   const [cargando, setCargando] = useState(false)
   const [esPlantillaExistente, setEsPlantillaExistente] = useState(false)
   const [mostrarVistaPrevia, setMostrarVistaPrevia] = useState(false)
+  const [mostrarModal, setMostrarModal] = useState(false)
   
   // ✅ NUEVO: Campos activos (checkboxes)
   const [camposActivos, setCamposActivos] = useState({
@@ -93,36 +95,36 @@ export default function ConfigurarPlantilla() {
   }
 
   const handleGuardar = async () => {
-    if (!imagen) {
-      toast.error('Sube una imagen primero')
-      return
-    }
-
-    setCargando(true)
-    const formData = new FormData()
-    if (archivo) formData.append('imagen', archivo)
-    Object.entries(posiciones).forEach(([key, value]) => formData.append(key, value))
-    Object.entries(camposActivos).forEach(([key, value]) => formData.append(`activo_${key}`, value))
-
-    try {
-      const res = await fetch(`http://localhost:5000/api/plantillas/${eventoId}`, {
-        method: 'POST',
-        body: formData
-      })
-      if (res.ok) {
-        const mensaje = esPlantillaExistente ? '✅ Plantilla actualizada' : '✅ Plantilla guardada'
-        toast.success(mensaje)
-        setTimeout(() => navigate('/certificados'), 1500)
-      } else {
-        const data = await res.json()
-        toast.error(data.message || 'Error al guardar')
-      }
-    } catch (error) {
-      toast.error('Error de conexión')
-    } finally {
-      setCargando(false)
-    }
+  if (!imagen) {
+    toast.error('Sube una imagen primero')
+    return
   }
+
+  setCargando(true)
+  const formData = new FormData()
+  if (archivo) formData.append('imagen', archivo)
+  Object.entries(posiciones).forEach(([key, value]) => formData.append(key, value))
+  Object.entries(camposActivos).forEach(([key, value]) => formData.append(`activo_${key}`, value))
+
+  try {
+    const res = await fetch(`http://localhost:5000/api/plantillas/${eventoId}`, {
+      method: 'POST',
+      body: formData
+    })
+    if (res.ok) {
+      const mensaje = esPlantillaExistente ? '✅ Plantilla actualizada' : '✅ Plantilla guardada'
+      toast.success(mensaje)
+      setMostrarModal(true)  // ✅ MOSTRAR MODAL
+    } else {
+      const data = await res.json()
+      toast.error(data.message || 'Error al guardar')
+    }
+  } catch (error) {
+    toast.error('Error de conexión')
+  } finally {
+    setCargando(false)
+  }
+}
 
   const campos = [
     { id: 'nombre', label: 'Nombre del Participante', color: 'bg-red-500' },
@@ -130,6 +132,16 @@ export default function ConfigurarPlantilla() {
     { id: 'calidad', label: 'Calidad (Expositor/Participante)', color: 'bg-green-500' },
     { id: 'fecha', label: 'Fecha y Lugar', color: 'bg-purple-500' }
   ]
+
+  {mostrarModal && (
+  <ModalGeneracion 
+    eventoId={eventoId}
+    onClose={() => setMostrarModal(false)}
+    onGenerado={() => {
+      fetchPlantilla()
+    }}
+  />
+)}
 
   return (
     <div className="space-y-6">
