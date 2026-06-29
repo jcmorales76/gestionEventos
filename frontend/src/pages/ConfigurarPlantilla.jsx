@@ -111,12 +111,12 @@ export default function ConfigurarPlantilla() {
       method: 'POST',
       body: formData
     })
+    const data = await res.json()
     if (res.ok) {
       const mensaje = esPlantillaExistente ? '✅ Plantilla actualizada' : '✅ Plantilla guardada'
       toast.success(mensaje)
-      setMostrarModal(true)  // ✅ MOSTRAR MODAL
+      setMostrarModal(true)  // ✅ AQUÍ SE MUESTRA EL MODAL
     } else {
-      const data = await res.json()
       toast.error(data.message || 'Error al guardar')
     }
   } catch (error) {
@@ -133,7 +133,7 @@ export default function ConfigurarPlantilla() {
     { id: 'fecha', label: 'Fecha y Lugar', color: 'bg-purple-500' }
   ]
 
-  {mostrarModal && (
+{mostrarModal && (
   <ModalGeneracion 
     eventoId={eventoId}
     onClose={() => setMostrarModal(false)}

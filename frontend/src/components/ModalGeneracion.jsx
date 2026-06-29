@@ -6,7 +6,6 @@ export default function ModalGeneracion({ eventoId, onClose, onGenerado }) {
   const [participantes, setParticipantes] = useState([])
   const [seleccionados, setSeleccionados] = useState([])
   const [cargando, setCargando] = useState(false)
-  const [inscripciones, setInscripciones] = useState(0)
 
   useEffect(() => {
     fetchInscripciones()
@@ -18,7 +17,6 @@ export default function ModalGeneracion({ eventoId, onClose, onGenerado }) {
       if (res.ok) {
         const data = await res.json()
         setParticipantes(data)
-        setInscripciones(data.length)
         setSeleccionados(data.map(p => p.id))
       }
     } catch (error) {
@@ -105,7 +103,7 @@ export default function ModalGeneracion({ eventoId, onClose, onGenerado }) {
             >
               <div className="text-3xl mb-2">🎓</div>
               <div className="font-bold text-gray-900">Generar Todos</div>
-              <div className="text-sm text-gray-600">{inscripciones} participantes</div>
+              <div className="text-sm text-gray-600">{participantes.length} participantes</div>
             </button>
 
             <button
@@ -179,7 +177,7 @@ export default function ModalGeneracion({ eventoId, onClose, onGenerado }) {
                   Generando...
                 </span>
               ) : (
-                <span> Generar Certificados</span>
+                <span>🚀 Generar Certificados</span>
               )}
             </button>
           </div>

@@ -40,7 +40,7 @@ exports.uploadPlantilla = async function(req, res) {
       if (existing.length === 0) return res.status(400).json({ message: "Sube una imagen" });
       await pool.query("UPDATE plantillas_certificados SET pos_nombre_x=?, pos_nombre_y=?, pos_tema_x=?, pos_tema_y=?, pos_calidad_x=?, pos_calidad_y=?, pos_fecha_x=?, pos_fecha_y=?, activo_nombre=?, activo_tema=?, activo_calidad=?, activo_fecha=? WHERE evento_id=?", [parseFloat(pos_nombre_x)||50, parseFloat(pos_nombre_y)||45, parseFloat(pos_tema_x)||50, parseFloat(pos_tema_y)||55, parseFloat(pos_calidad_x)||50, parseFloat(pos_calidad_y)||70, parseFloat(pos_fecha_x)||50, parseFloat(pos_fecha_y)||85, parseInt(activo_nombre)||1, parseInt(activo_tema)||0, parseInt(activo_calidad)||1, parseInt(activo_fecha)||0, eventoId]);
       console.log("✅ Posiciones actualizadas en BD");
-      return res.json({ message: "Posiciones actualizadas" });
+      return res.json({ message: "Posiciones actualizadas", guardado: true });
     }
 
     const url = "/uploads/plantillas/" + req.file.filename;
@@ -52,7 +52,7 @@ exports.uploadPlantilla = async function(req, res) {
     }
 
     console.log("✅ Plantilla guardada en BD correctamente");
-    res.json({ message: "Plantilla guardada", url: url });
+    res.json({ message: "Plantilla guardada", url: url, guardado: true });
   } catch (error) {
     console.error("❌ Error al guardar:", error);
     res.status(500).json({ message: "Error: " + error.message });
