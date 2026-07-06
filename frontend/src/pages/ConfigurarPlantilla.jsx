@@ -13,10 +13,9 @@ export default function ConfigurarPlantilla() {
   const [campoActivo, setCampoActivo] = useState('nombre')
   const [cargando, setCargando] = useState(false)
   const [esPlantillaExistente, setEsPlantillaExistente] = useState(false)
-  const [mostrarVistaPrevia, setMostrarVistaPrevia] = useState(false)
   const [mostrarModal, setMostrarModal] = useState(false)
+  const [mostrarVistaPrevia, setMostrarVistaPrevia] = useState(false)
   
-  // ✅ NUEVO: Campos activos (checkboxes)
   const [camposActivos, setCamposActivos] = useState({
     nombre: 1,
     tema: 0,
@@ -46,7 +45,6 @@ export default function ConfigurarPlantilla() {
           calidad_x: data.pos_calidad_x, calidad_y: data.pos_calidad_y,
           fecha_x: data.pos_fecha_x, fecha_y: data.pos_fecha_y
         })
-        // ✅ Cargar estado de campos activos
         setCamposActivos({
           nombre: data.activo_nombre !== undefined ? data.activo_nombre : 1,
           tema: data.activo_tema !== undefined ? data.activo_tema : 0,
@@ -95,36 +93,36 @@ export default function ConfigurarPlantilla() {
   }
 
   const handleGuardar = async () => {
-  if (!imagen) {
-    toast.error('Sube una imagen primero')
-    return
-  }
-
-  setCargando(true)
-  const formData = new FormData()
-  if (archivo) formData.append('imagen', archivo)
-  Object.entries(posiciones).forEach(([key, value]) => formData.append(key, value))
-  Object.entries(camposActivos).forEach(([key, value]) => formData.append(`activo_${key}`, value))
-
-  try {
-    const res = await fetch(`http://localhost:5000/api/plantillas/${eventoId}`, {
-      method: 'POST',
-      body: formData
-    })
-    const data = await res.json()
-    if (res.ok) {
-      const mensaje = esPlantillaExistente ? '✅ Plantilla actualizada' : '✅ Plantilla guardada'
-      toast.success(mensaje)
-      setMostrarModal(true)  // ✅ AQUÍ SE MUESTRA EL MODAL
-    } else {
-      toast.error(data.message || 'Error al guardar')
+    if (!imagen) {
+      toast.error('Sube una imagen primero')
+      return
     }
-  } catch (error) {
-    toast.error('Error de conexión')
-  } finally {
-    setCargando(false)
+
+    setCargando(true)
+    const formData = new FormData()
+    if (archivo) formData.append('imagen', archivo)
+    Object.entries(posiciones).forEach(([key, value]) => formData.append(key, value))
+    Object.entries(camposActivos).forEach(([key, value]) => formData.append(`activo_${key}`, value))
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/plantillas/${eventoId}`, {
+        method: 'POST',
+        body: formData
+      })
+      const data = await res.json()
+      if (res.ok) {
+        const mensaje = esPlantillaExistente ? '✅ Plantilla actualizada' : '✅ Plantilla guardada'
+        toast.success(mensaje)
+        setMostrarModal(true)  // ✅ AQUÍ SE MUESTRA EL MODAL
+      } else {
+        toast.error(data.message || 'Error al guardar')
+      }
+    } catch (error) {
+      toast.error('Error de conexión')
+    } finally {
+      setCargando(false)
+    }
   }
-}
 
   const campos = [
     { id: 'nombre', label: 'Nombre del Participante', color: 'bg-red-500' },
@@ -132,16 +130,6 @@ export default function ConfigurarPlantilla() {
     { id: 'calidad', label: 'Calidad (Expositor/Participante)', color: 'bg-green-500' },
     { id: 'fecha', label: 'Fecha y Lugar', color: 'bg-purple-500' }
   ]
-
-{mostrarModal && (
-  <ModalGeneracion 
-    eventoId={eventoId}
-    onClose={() => setMostrarModal(false)}
-    onGenerado={() => {
-      fetchPlantilla()
-    }}
-  />
-)}
 
   return (
     <div className="space-y-6">
@@ -155,7 +143,7 @@ export default function ConfigurarPlantilla() {
               </span>
             ) : (
               <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-                 Nueva Plantilla
+                🆕 Nueva Plantilla
               </span>
             )}
           </div>
@@ -198,7 +186,6 @@ export default function ConfigurarPlantilla() {
             </div>
           </div>
 
-          {/* ✅ NUEVO: Checkboxes para activar/desactivar campos */}
           <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
             <label className="label-input">3. Campos a Mostrar</label>
             <div className="space-y-2 mt-2">
@@ -270,7 +257,6 @@ export default function ConfigurarPlantilla() {
               >
                 <img src={imagen} alt="Plantilla" className="w-full h-full object-contain" />
                 
-                {/* Marcadores de Posición */}
                 {campos.map(campo => camposActivos[campo.id] === 1 && (
                   <div
                     key={campo.id}
@@ -285,7 +271,6 @@ export default function ConfigurarPlantilla() {
                   />
                 ))}
 
-                {/* Vista Previa del Texto */}
                 {mostrarVistaPrevia && (
                   <div className="absolute inset-0 pointer-events-none">
                     {camposActivos.nombre === 1 && (
@@ -345,6 +330,17 @@ export default function ConfigurarPlantilla() {
           </div>
         </div>
       </div>
+
+      {/* MODAL DE GENERACIÓN */}
+      {mostrarModal && (
+        <ModalGeneracion 
+          eventoId={eventoId}
+          onClose={() => setMostrarModal(false)}
+          onGenerado={() => {
+            fetchPlantilla()
+          }}
+        />
+      )}
     </div>
   )
 }

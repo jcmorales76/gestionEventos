@@ -6,6 +6,7 @@ export default function ModalGeneracion({ eventoId, onClose, onGenerado }) {
   const [participantes, setParticipantes] = useState([])
   const [seleccionados, setSeleccionados] = useState([])
   const [cargando, setCargando] = useState(false)
+  const [progreso, setProgreso] = useState({ actual: 0, total: 0 })
 
   useEffect(() => {
     fetchInscripciones()
@@ -38,6 +39,11 @@ export default function ModalGeneracion({ eventoId, onClose, onGenerado }) {
     }
   }
 
+  const descargarPDF = (url) => {
+    // Abre el PDF en una nueva pestaña para descargar
+    window.open(`http://localhost:5000${url}`, '_blank')
+  }
+
   const handleGenerar = async () => {
     if (seleccionados.length === 0) {
       toast.error('Selecciona al menos un participante')
@@ -45,33 +51,32 @@ export default function ModalGeneracion({ eventoId, onClose, onGenerado }) {
     }
 
     setCargando(true)
+    const total = seleccionados.length
+    setProgreso({ actual: 0, total })
+    const pdfsGenerados = []
+
     try {
-      if (modo === 'masivo') {
-        const res = await fetch(`http://localhost:5000/api/plantillas/generar-masivo/${eventoId}`, {
+      for (let i = 0; i < seleccionados.length; i++) {
+        const id = seleccionados[i]
+        const res = await fetch(`http://localhost:5000/api/plantillas/generar/${id}`, {
           method: 'POST'
         })
         const data = await res.json()
+        
         if (res.ok) {
-          toast.success(`✅ ${data.certificados.length} certificados generados`)
-          if (onGenerado) onGenerado()
-          onClose()
-        } else {
-          toast.error(data.message || 'Error al generar')
+          pdfsGenerados.push(data)
+          descargarPDF(data.url)
         }
-      } else {
-        const resultados = []
-        for (const id of seleccionados) {
-          const res = await fetch(`http://localhost:5000/api/plantillas/generar/${id}`, {
-            method: 'POST'
-          })
-          const data = await res.json()
-          if (res.ok) {
-            resultados.push(data)
-          }
-        }
-        toast.success(`✅ ${resultados.length} certificado(s) generado(s)`)
+        
+        setProgreso({ actual: i + 1, total })
+      }
+
+      if (pdfsGenerados.length > 0) {
+        toast.success(`✅ ${pdfsGenerados.length} certificado(s) generado(s) y descargado(s)`)
         if (onGenerado) onGenerado()
         onClose()
+      } else {
+        toast.error('No se pudo generar ningún certificado')
       }
     } catch (error) {
       toast.error('Error de conexión')
@@ -84,10 +89,7 @@ export default function ModalGeneracion({ eventoId, onClose, onGenerado }) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6 rounded-t-2xl">
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <span className="text-3xl">🎉</span>
-            ¡Plantilla Guardada!
-          </h2>
+          <h2 className="text-2xl font-bold text-white">¡Plantilla Guardada!</h2>
           <p className="text-green-100 mt-1">¿Qué deseas hacer ahora?</p>
         </div>
 
@@ -133,10 +135,7 @@ export default function ModalGeneracion({ eventoId, onClose, onGenerado }) {
               </div>
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {participantes.map(p => (
-                  <label
-                    key={p.id}
-                    className="flex items-center gap-3 p-2 rounded hover:bg-gray-50 cursor-pointer"
-                  >
+                  <label key={p.id} className="flex items-center gap-3 p-2 rounded hover:bg-gray-50 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={seleccionados.includes(p.id)}
@@ -147,38 +146,46 @@ export default function ModalGeneracion({ eventoId, onClose, onGenerado }) {
                       <div className="font-medium text-gray-900">{p.nombre} {p.apellido}</div>
                       <div className="text-xs text-gray-500">{p.email}</div>
                     </div>
-                    <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
-                      {p.calidad || 'PARTICIPANTE'}
-                    </span>
                   </label>
                 ))}
               </div>
-              <div className="mt-3 text-sm text-gray-600">
-                {seleccionados.length} de {participantes.length} seleccionados
+            </div>
+          )}
+
+          {cargando && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <div className="flex items-center gap-3">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                <div className="flex-1">
+                  <div className="font-semibold text-blue-900">Generando certificados...</div>
+                  <div className="text-sm text-blue-700">
+                    {progreso.actual} de {progreso.total} completados
+                  </div>
+                  <div className="mt-2 bg-blue-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all"
+                      style={{ width: `${(progreso.actual / progreso.total) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
           <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="flex-1 py-3 px-4 rounded-xl border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition-all"
+            <button 
+              onClick={onClose} 
+              disabled={cargando}
+              className="flex-1 py-3 px-4 rounded-xl border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 disabled:opacity-50"
             >
               Cancelar
             </button>
             <button
               onClick={handleGenerar}
               disabled={cargando}
-              className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold hover:from-green-600 hover:to-emerald-700 transition-all disabled:opacity-50 shadow-md"
+              className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold hover:from-green-600 hover:to-emerald-700 disabled:opacity-50"
             >
-              {cargando ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="animate-spin">⏳</span>
-                  Generando...
-                </span>
-              ) : (
-                <span>🚀 Generar Certificados</span>
-              )}
+              {cargando ? 'Generando...' : '🚀 Generar Certificados'}
             </button>
           </div>
         </div>
