@@ -79,13 +79,13 @@ exports.uploadPlantilla = async function (req, res) {
         "UPDATE plantillas_certificados SET pos_nombre_x=?, pos_nombre_y=?, pos_tema_x=?, pos_tema_y=?, pos_calidad_x=?, pos_calidad_y=?, pos_fecha_x=?, pos_fecha_y=?, activo_nombre=?, activo_tema=?, activo_calidad=?, activo_fecha=? WHERE evento_id=?",
         [
           parseFloat(pos_nombre_x) || 50,
-          parseFloat(pos_nombre_y) || 45,
+          parseFloat(pos_nombre_y) || 40,
           parseFloat(pos_tema_x) || 50,
-          parseFloat(pos_tema_y) || 55,
+          parseFloat(pos_tema_y) || 52,
           parseFloat(pos_calidad_x) || 50,
-          parseFloat(pos_calidad_y) || 70,
+          parseFloat(pos_calidad_y) || 64,
           parseFloat(pos_fecha_x) || 50,
-          parseFloat(pos_fecha_y) || 85,
+          parseFloat(pos_fecha_y) || 80,
           parseInt(activo_nombre) || 1,
           parseInt(activo_tema) || 0,
           parseInt(activo_calidad) || 1,
@@ -105,13 +105,13 @@ exports.uploadPlantilla = async function (req, res) {
         [
           url,
           parseFloat(pos_nombre_x) || 50,
-          parseFloat(pos_nombre_y) || 45,
+          parseFloat(pos_nombre_y) || 40,
           parseFloat(pos_tema_x) || 50,
-          parseFloat(pos_tema_y) || 55,
+          parseFloat(pos_tema_y) || 52,
           parseFloat(pos_calidad_x) || 50,
-          parseFloat(pos_calidad_y) || 70,
+          parseFloat(pos_calidad_y) || 64,
           parseFloat(pos_fecha_x) || 50,
-          parseFloat(pos_fecha_y) || 85,
+          parseFloat(pos_fecha_y) || 80,
           parseInt(activo_nombre) || 1,
           parseInt(activo_tema) || 0,
           parseInt(activo_calidad) || 1,
@@ -126,13 +126,13 @@ exports.uploadPlantilla = async function (req, res) {
           eventoId,
           url,
           parseFloat(pos_nombre_x) || 50,
-          parseFloat(pos_nombre_y) || 45,
+          parseFloat(pos_nombre_y) || 40,
           parseFloat(pos_tema_x) || 50,
-          parseFloat(pos_tema_y) || 55,
+          parseFloat(pos_tema_y) || 52,
           parseFloat(pos_calidad_x) || 50,
-          parseFloat(pos_calidad_y) || 70,
+          parseFloat(pos_calidad_y) || 64,
           parseFloat(pos_fecha_x) || 50,
-          parseFloat(pos_fecha_y) || 85,
+          parseFloat(pos_fecha_y) || 80,
           parseInt(activo_nombre) || 1,
           parseInt(activo_tema) || 0,
           parseInt(activo_calidad) || 1,
@@ -221,30 +221,39 @@ exports.generarCertificadoConPlantilla = async function (req, res) {
       return (parseFloat(pct) / 100) * doc.page.height;
     };
 
-    if (parseInt(p.activo_nombre) !== 0) {
+    // Centra el texto EXACTAMENTE sobre el punto (x, y), igual que la vista
+    // previa del frontend (ancla en el centro del texto). Se mide el ancho/alto
+    // real y se resta la mitad a cada eje. Tamaño y color se leen de la BD.
+    const drawCentered = function (texto, xPct, yPct, fontSize, color) {
       doc
-        .fontSize(20)
+        .fontSize(fontSize)
         .font("Helvetica-Bold")
-        .fillColor("#1e3a8a")
-        .text(
-          (insc.nombre + " " + insc.apellido).toUpperCase(),
-          toX(50),
-          toY(25),
-          { align: "center", width: 500 },
-        );
+        .fillColor(color || "#1e3a8a");
+      const ancho = doc.widthOfString(texto);
+      const alto = doc.currentLineHeight();
+      doc.text(texto, toX(xPct) - ancho / 2, toY(yPct) - alto / 2, {
+        lineBreak: false,
+      });
+    };
+
+    if (parseInt(p.activo_nombre) !== 0) {
+      drawCentered(
+        (insc.nombre + " " + insc.apellido).toUpperCase(),
+        p.pos_nombre_x,
+        p.pos_nombre_y,
+        p.font_size_nombre || 24,
+        p.color_nombre,
+      );
     }
 
     if (parseInt(p.activo_calidad) !== 0) {
-      doc
-        .fontSize(16)
-        .font("Helvetica-Bold")
-        .fillColor("#1e3a8a")
-        .text(
-          (insc.calidad || "PARTICIPANTE").toUpperCase(),
-          toX(50),
-          toY(55),
-          { align: "center", width: 300 },
-        );
+      drawCentered(
+        (insc.calidad || "PARTICIPANTE").toUpperCase(),
+        p.pos_calidad_x,
+        p.pos_calidad_y,
+        p.font_size_calidad || 18,
+        p.color_calidad,
+      );
     }
 
     doc.end();
@@ -328,30 +337,38 @@ exports.generarCertificadosMasivos = async function (req, res) {
           return (parseFloat(pct) / 100) * doc.page.height;
         };
 
-        if (parseInt(p.activo_nombre) !== 0) {
+        // Centra el texto EXACTAMENTE sobre el punto (x, y), igual que la vista
+        // previa del frontend. Tamaño y color se leen de la BD.
+        const drawCentered = function (texto, xPct, yPct, fontSize, color) {
           doc
-            .fontSize(24)
+            .fontSize(fontSize)
             .font("Helvetica-Bold")
-            .fillColor("#1e3a8a")
-            .text(
-              (insc.nombre + " " + insc.apellido).toUpperCase(),
-              toX(p.pos_nombre_x),
-              toY(p.pos_nombre_y),
-              { align: "center", width: 500 },
-            );
+            .fillColor(color || "#1e3a8a");
+          const ancho = doc.widthOfString(texto);
+          const alto = doc.currentLineHeight();
+          doc.text(texto, toX(xPct) - ancho / 2, toY(yPct) - alto / 2, {
+            lineBreak: false,
+          });
+        };
+
+        if (parseInt(p.activo_nombre) !== 0) {
+          drawCentered(
+            (insc.nombre + " " + insc.apellido).toUpperCase(),
+            p.pos_nombre_x,
+            p.pos_nombre_y,
+            p.font_size_nombre || 24,
+            p.color_nombre,
+          );
         }
 
         if (parseInt(p.activo_calidad) !== 0) {
-          doc
-            .fontSize(24)
-            .font("Helvetica-Bold")
-            .fillColor("#1e3a8a")
-            .text(
-              (insc.calidad || "PARTICIPANTE").toUpperCase(),
-              toX(p.pos_calidad_x),
-              toY(p.pos_calidad_y),
-              { align: "center", width: 300 },
-            );
+          drawCentered(
+            (insc.calidad || "PARTICIPANTE").toUpperCase(),
+            p.pos_calidad_x,
+            p.pos_calidad_y,
+            p.font_size_calidad || 18,
+            p.color_calidad,
+          );
         }
 
         doc.end();

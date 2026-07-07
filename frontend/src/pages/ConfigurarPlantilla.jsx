@@ -24,10 +24,10 @@ export default function ConfigurarPlantilla() {
   })
 
   const [posiciones, setPosiciones] = useState({
-    nombre_x: 50, nombre_y: 45,
-    tema_x: 50, tema_y: 55,
-    calidad_x: 50, calidad_y: 70,
-    fecha_x: 50, fecha_y: 85
+    nombre_x: 50, nombre_y: 40,
+    tema_x: 50, tema_y: 52,
+    calidad_x: 50, calidad_y: 64,
+    fecha_x: 50, fecha_y: 80
   })
 
   useEffect(() => {
@@ -101,7 +101,7 @@ export default function ConfigurarPlantilla() {
     setCargando(true)
     const formData = new FormData()
     if (archivo) formData.append('imagen', archivo)
-    Object.entries(posiciones).forEach(([key, value]) => formData.append(key, value))
+    Object.entries(posiciones).forEach(([key, value]) => formData.append(`pos_${key}`, value))
     Object.entries(camposActivos).forEach(([key, value]) => formData.append(`activo_${key}`, value))
 
     try {
@@ -255,7 +255,7 @@ export default function ConfigurarPlantilla() {
                 className="relative border-2 border-dashed border-gray-300 rounded-lg overflow-hidden cursor-crosshair bg-gray-50"
                 style={{ aspectRatio: '1.414/1' }}
               >
-                <img src={imagen} alt="Plantilla" className="w-full h-full object-contain" />
+                <img src={imagen} alt="Plantilla" className="w-full h-full object-fill" />
                 
                 {campos.map(campo => camposActivos[campo.id] === 1 && (
                   <div

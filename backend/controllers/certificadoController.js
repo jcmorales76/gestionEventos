@@ -61,61 +61,78 @@ async function crearPDFCertificado(inscripcion, callback) {
     const toX = (percent) => (percent / 100) * doc.page.width;
     const toY = (percent) => (percent / 100) * doc.page.height;
 
-    // 6. Superponer textos en las coordenadas guardadas
+    // Centra el texto EXACTAMENTE sobre el punto (x, y) en %, igual que la vista
+    // previa del frontend: se mide el ancho/alto real y se ancla por el centro.
+    const drawCentered = (texto, xPct, yPct, fontSize, font, color) => {
+      doc
+        .fontSize(fontSize)
+        .font(font)
+        .fillColor(color || "#1e3a8a");
+      const ancho = doc.widthOfString(texto);
+      const alto = doc.currentLineHeight();
+      doc.text(texto, toX(xPct) - ancho / 2, toY(yPct) - alto / 2, {
+        lineBreak: false,
+      });
+    };
+
+    // 6. Superponer textos en las coordenadas guardadas (solo campos activos,
+    // para no pisar el texto que ya trae la imagen de la plantilla).
 
     // NOMBRE DEL PARTICIPANTE
-    doc
-      .fontSize(p.font_size_nombre || 24)
-      .font("Helvetica-Bold")
-      .fillColor(p.color_nombre || "#1e3a8a")
-      .text(
+    if (parseInt(p.activo_nombre) !== 0) {
+      drawCentered(
         nombreCompleto.toUpperCase(),
-        toX(p.pos_nombre_x),
-        toY(p.pos_nombre_y),
-        { align: "center", width: 400 },
+        p.pos_nombre_x,
+        p.pos_nombre_y,
+        p.font_size_nombre || 24,
+        "Helvetica-Bold",
+        p.color_nombre,
       );
+    }
 
-    // TEMA DEL EVENTO (opcional)
-    if (inscripcion.tema) {
-      doc
-        .fontSize(14)
-        .font("Helvetica-Oblique")
-        .fillColor("#3b82f6")
-        .text(`"${inscripcion.tema}"`, toX(p.pos_tema_x), toY(p.pos_tema_y), {
-          align: "center",
-          width: 500,
-        });
+    // TEMA DEL EVENTO
+    if (parseInt(p.activo_tema) !== 0 && inscripcion.tema) {
+      drawCentered(
+        `"${inscripcion.tema}"`,
+        p.pos_tema_x,
+        p.pos_tema_y,
+        14,
+        "Helvetica-Oblique",
+        "#3b82f6",
+      );
     }
 
     // CALIDAD (EXPOSITOR, PARTICIPANTE, ORGANIZADOR)
-    doc
-      .fontSize(p.font_size_calidad || 18)
-      .font("Helvetica-Bold")
-      .fillColor(p.color_calidad || "#1e3a8a")
-      .text(calidad.toUpperCase(), toX(p.pos_calidad_x), toY(p.pos_calidad_y), {
-        align: "center",
-        width: 300,
-      });
+    if (parseInt(p.activo_calidad) !== 0) {
+      drawCentered(
+        calidad.toUpperCase(),
+        p.pos_calidad_x,
+        p.pos_calidad_y,
+        p.font_size_calidad || 18,
+        "Helvetica-Bold",
+        p.color_calidad,
+      );
+    }
 
     // FECHA Y LUGAR
-    const fechaFormateada = inscripcion.fecha_inicio
-      ? new Date(inscripcion.fecha_inicio).toLocaleDateString("es-ES", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        })
-      : "22, 23 y 24 de abril del 2026";
+    if (parseInt(p.activo_fecha) !== 0) {
+      const fechaFormateada = inscripcion.fecha_inicio
+        ? new Date(inscripcion.fecha_inicio).toLocaleDateString("es-ES", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })
+        : "22, 23 y 24 de abril del 2026";
 
-    doc
-      .fontSize(12)
-      .font("Helvetica")
-      .fillColor("#000000")
-      .text(
+      drawCentered(
         `Realizado el ${fechaFormateada} en la ciudad de Arequipa, Perú.`,
-        toX(p.pos_fecha_x),
-        toY(p.pos_fecha_y),
-        { align: "center", width: 500 },
+        p.pos_fecha_x,
+        p.pos_fecha_y,
+        12,
+        "Helvetica",
+        "#000000",
       );
+    }
 
     doc.end();
 

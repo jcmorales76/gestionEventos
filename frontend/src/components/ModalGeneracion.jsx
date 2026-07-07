@@ -45,29 +45,50 @@ export default function ModalGeneracion({ eventoId, onClose, onGenerado }) {
   }
 
   const handleGenerar = async () => {
-    if (seleccionados.length === 0) {
-      toast.error('Selecciona al menos un participante')
-      return
-    }
-
     setCargando(true)
-    const total = seleccionados.length
-    setProgreso({ actual: 0, total })
-    const pdfsGenerados = []
 
     try {
+      if (modo === 'masivo') {
+        // Una sola petición: el backend genera todos los certificados del evento.
+        setProgreso({ actual: 0, total: participantes.length })
+        const res = await fetch(`http://localhost:5000/api/plantillas/generar-masivo/${eventoId}`, {
+          method: 'POST'
+        })
+        const data = await res.json()
+
+        if (res.ok && data.certificados && data.certificados.length > 0) {
+          setProgreso({ actual: data.certificados.length, total: participantes.length })
+          toast.success(`✅ ${data.certificados.length} certificado(s) generado(s). Disponibles en el perfil de cada participante.`)
+          if (onGenerado) onGenerado()
+          onClose()
+        } else {
+          toast.error(data.message || 'No se pudo generar ningún certificado')
+        }
+        return
+      }
+
+      // Modo individual: genera solo los participantes seleccionados.
+      if (seleccionados.length === 0) {
+        toast.error('Selecciona al menos un participante')
+        return
+      }
+
+      const total = seleccionados.length
+      setProgreso({ actual: 0, total })
+      const pdfsGenerados = []
+
       for (let i = 0; i < seleccionados.length; i++) {
         const id = seleccionados[i]
         const res = await fetch(`http://localhost:5000/api/plantillas/generar/${id}`, {
           method: 'POST'
         })
         const data = await res.json()
-        
+
         if (res.ok) {
           pdfsGenerados.push(data)
           descargarPDF(data.url)
         }
-        
+
         setProgreso({ actual: i + 1, total })
       }
 
