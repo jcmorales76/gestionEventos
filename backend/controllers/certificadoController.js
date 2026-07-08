@@ -279,7 +279,12 @@ exports.getCertificadosByParticipante = async (req, res) => {
     const { usuarioId } = req.params;
 
     const [certificados] = await pool.query(
-      `SELECT c.*, e.nombre as evento_nombre, e.tipo, e.fecha_fin, e.horas_academicas
+      `SELECT c.*, e.nombre as evento_nombre, e.tipo, e.fecha_fin, e.horas_academicas,
+              e.requiere_encuesta,
+              (SELECT COUNT(*) FROM encuestas enc
+                 JOIN encuesta_respuestas r ON r.encuesta_id = enc.id
+                 WHERE enc.evento_id = c.evento_id AND r.usuario_id = i.usuario_id
+              ) AS encuesta_respondida
        FROM certificados c
        INNER JOIN inscripciones i ON c.inscripcion_id = i.id
        INNER JOIN eventos e ON c.evento_id = e.id
@@ -288,10 +293,125 @@ exports.getCertificadosByParticipante = async (req, res) => {
       [usuarioId],
     );
 
-    res.json(certificados);
+    res.json(
+      certificados.map((c) => ({
+        ...c,
+        requiere_encuesta: !!c.requiere_encuesta,
+        encuesta_respondida: c.encuesta_respondida > 0,
+      })),
+    );
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ message: "Error al obtener certificados" });
+  }
+};
+
+// ============================================
+// 3b. ESTADO DE CERTIFICADOS DEL PARTICIPANTE (por evento inscrito)
+// ============================================
+exports.getMisCertificados = async (req, res) => {
+  try {
+    const { usuarioId } = req.params;
+
+    const [rows] = await pool.query(
+      `SELECT i.id AS inscripcion_id, e.id AS evento_id, e.nombre AS evento_nombre,
+              e.tipo, e.fecha_fin, e.horas_academicas, e.requiere_encuesta,
+              c.id AS certificado_id, c.url_pdf,
+              (SELECT COUNT(*) FROM plantillas_certificados pc WHERE pc.evento_id = e.id) AS tiene_plantilla,
+              (SELECT COUNT(*) FROM encuestas enc
+                 JOIN encuesta_respuestas r ON r.encuesta_id = enc.id
+                 WHERE enc.evento_id = e.id AND r.usuario_id = i.usuario_id) AS encuesta_respondida
+       FROM inscripciones i
+       JOIN eventos e ON i.evento_id = e.id
+       LEFT JOIN certificados c ON c.inscripcion_id = i.id
+       WHERE i.usuario_id = ?
+       ORDER BY e.fecha_fin DESC`,
+      [usuarioId],
+    );
+
+    res.json(
+      rows.map((r) => ({
+        inscripcion_id: r.inscripcion_id,
+        evento_id: r.evento_id,
+        evento_nombre: r.evento_nombre,
+        tipo: r.tipo,
+        fecha_fin: r.fecha_fin,
+        horas_academicas: r.horas_academicas,
+        requiere_encuesta: !!r.requiere_encuesta,
+        encuesta_respondida: r.encuesta_respondida > 0,
+        tiene_certificado: !!r.certificado_id,
+        url_pdf: r.url_pdf || null,
+        tiene_plantilla: r.tiene_plantilla > 0,
+      })),
+    );
+  } catch (error) {
+    console.error("Error al obtener mis certificados:", error);
+    res.status(500).json({ message: "Error al obtener certificados" });
+  }
+};
+
+// ============================================
+// 3c. GENERAR CERTIFICADO BAJO DEMANDA (participante)
+// ============================================
+exports.generarCertificadoParticipante = async (req, res) => {
+  try {
+    const { inscripcionId } = req.params;
+
+    const [rows] = await pool.query(
+      `SELECT i.id as inscripcion_id, i.evento_id, i.usuario_id, i.calidad,
+              u.nombre, u.apellido,
+              e.fecha_fin, e.tema, e.fecha_inicio, e.requiere_encuesta
+       FROM inscripciones i
+       INNER JOIN usuarios u ON i.usuario_id = u.id
+       INNER JOIN eventos e ON i.evento_id = e.id
+       WHERE i.id = ?`,
+      [inscripcionId],
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Inscripción no encontrada" });
+    }
+    const insc = rows[0];
+
+    // Validación 1: el evento debe haber finalizado
+    if (insc.fecha_fin && new Date(insc.fecha_fin) > new Date()) {
+      return res.status(403).json({
+        message: "El certificado estará disponible al finalizar el evento",
+      });
+    }
+
+    // Validación 2: si requiere encuesta, debe haberla respondido
+    if (insc.requiere_encuesta) {
+      const [enc] = await pool.query(
+        "SELECT id FROM encuestas WHERE evento_id = ?",
+        [insc.evento_id],
+      );
+      if (enc.length > 0) {
+        const [r] = await pool.query(
+          "SELECT id FROM encuesta_respuestas WHERE encuesta_id = ? AND usuario_id = ?",
+          [enc[0].id, insc.usuario_id],
+        );
+        if (r.length === 0) {
+          return res.status(403).json({
+            message:
+              "Debes responder la encuesta de satisfacción antes de obtener tu certificado",
+          });
+        }
+      }
+    }
+
+    crearPDFCertificado(insc, (error, result) => {
+      if (error) {
+        console.error("Error al crear PDF:", error);
+        return res.status(500).json({
+          message: error.message || "Error al generar el certificado",
+        });
+      }
+      res.json({ message: "Certificado generado", url: result.urlPdf });
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({ message: "Error al generar el certificado" });
   }
 };
 

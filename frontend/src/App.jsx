@@ -23,6 +23,7 @@ import Usuarios from "./pages/Usuarios";
 import Reportes from "./pages/Reportes";
 import Importacion from "./pages/Importacion";
 import Configuracion from "./pages/Configuracion";
+import Encuestas from "./pages/Encuestas";
 import MisCertificados from "./pages/MisCertificados"; // ✅ Portal Participante (AGREGADO)
 import ConfigurarPlantilla from "./pages/ConfigurarPlantilla";
 
@@ -32,6 +33,7 @@ import ModalConfirmacionPersonalizada from "./components/ModalConfirmacionPerson
 import ParticipantLayout from "./layouts/ParticipantLayout";
 import MisEventos from "./pages/MisEventos";
 import MisMateriales from "./pages/MisMateriales";
+import MisEncuestas from "./pages/MisEncuestas";
 import MiPerfil from "./pages/MiPerfil";
 
 // Layout Privado para Admin
@@ -41,8 +43,6 @@ const PrivateLayout = () => {
   const location = useLocation();
   const [systemLogo, setSystemLogo] = useState(null);
   const [config, setConfig] = useState(null);
-
-  if (!user) return <Navigate to="/login" replace />;
 
   // Cargar logo y configuración del sistema
   useEffect(() => {
@@ -65,6 +65,11 @@ const PrivateLayout = () => {
     fetchSystemConfig();
   }, []);
 
+  // Guardas DESPUÉS de los hooks (nunca antes, o se rompe el orden de hooks)
+  if (!user) return <Navigate to="/login" replace />;
+  // 🔒 Los participantes no pueden acceder al área de administración
+  if (user.rol === "participante") return <Navigate to="/portal" replace />;
+
   const menuGroups = [
     {
       title: "General",
@@ -77,6 +82,7 @@ const PrivateLayout = () => {
         { path: "/participantes", label: "Participantes", icon: "👥" },
         { path: "/materiales", label: "Materiales", icon: "📁" },
         { path: "/certificados", label: "Certificados", icon: "📜" },
+        { path: "/encuestas", label: "Encuestas", icon: "📝" },
       ],
     },
     {
@@ -242,6 +248,7 @@ function App() {
           <Route path="/reportes" element={<Reportes />} />
           <Route path="/importacion" element={<Importacion />} />
           <Route path="/configuracion" element={<Configuracion />} />
+          <Route path="/encuestas" element={<Encuestas />} />
           <Route path="/certificados/configurar/:eventoId" element={<ConfigurarPlantilla />} />
           <Route
             path="/certificados/configurar/:eventoId"
@@ -253,6 +260,7 @@ function App() {
         <Route element={<ParticipantLayout />}>
           <Route path="/portal" element={<MisEventos />} />
           <Route path="/portal/materiales" element={<MisMateriales />} />
+          <Route path="/portal/encuestas" element={<MisEncuestas />} />
           <Route path="/portal/certificados" element={<MisCertificados />} /> //
           ✅ Participante
           <Route path="/portal/perfil" element={<MiPerfil />} />

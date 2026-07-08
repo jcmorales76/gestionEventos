@@ -6,11 +6,10 @@ const fs = require("fs");
 // Configuración de almacenamiento
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const { eventoId, sesion } = req.body;
-    const uploadPath = path.join(
-      __dirname,
-      `../uploads/eventos/${eventoId}/${sesion}`,
-    );
+    // Carpeta plana e independiente de req.body: durante el parseo del
+    // multipart, req.body.eventoId/sesion aún NO están poblados (llegaban
+    // "undefined"). El evento y la sesión se guardan en columnas de la BD.
+    const uploadPath = path.join(__dirname, "../uploads/materiales");
 
     // Crear carpeta si no existe
     if (!fs.existsSync(uploadPath)) {
@@ -21,7 +20,16 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + "-" + file.originalname);
+    // multer/busboy decodifica el nombre como latin1; recuperamos el UTF-8 real
+    const originalUtf8 = Buffer.from(file.originalname, "latin1").toString(
+      "utf8",
+    );
+    // nombre físico sin acentos ni espacios (evita problemas de URL/disco)
+    const safe = originalUtf8
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .replace(/[^a-zA-Z0-9._-]/g, "_");
+    cb(null, uniqueSuffix + "-" + safe);
   },
 });
 
@@ -82,12 +90,14 @@ const uploadMaterial = async (req, res) => {
     const materialData = {
       evento_id: eventoId,
       sesion: sesion,
-      nombre_original: req.file.originalname,
+      nombre_original: Buffer.from(req.file.originalname, "latin1").toString(
+        "utf8",
+      ),
       nombre_archivo: req.file.filename,
       tipo_archivo: req.file.mimetype,
       tamaño: req.file.size,
       descripcion: descripcion || "",
-      url_descarga: `/uploads/eventos/${eventoId}/${sesion}/${req.file.filename}`,
+      url_descarga: `/uploads/materiales/${req.file.filename}`,
     };
 
     const [result] = await pool.query(

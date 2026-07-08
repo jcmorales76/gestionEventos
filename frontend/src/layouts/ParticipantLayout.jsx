@@ -12,9 +12,6 @@ export default function ParticipantLayout() {
   const [systemLogo, setSystemLogo] = useState(null);
   const [systemName, setSystemName] = useState("FEPCMAC");
 
-  // Si no hay usuario, mandar al login
-  if (!user) return <Navigate to="/login" replace />;
-
   // ✅ NUEVO: Cargar logo y nombre del sistema
   useEffect(() => {
     const fetchSystemConfig = async () => {
@@ -45,12 +42,25 @@ export default function ParticipantLayout() {
       setActiveMenu("mi-perfil");
     } else if (path.includes("/materiales")) {
       setActiveMenu("mis-materiales");
+    } else if (path.includes("/encuestas")) {
+      setActiveMenu("mis-encuestas");
     } else if (path.includes("/certificados")) {
       setActiveMenu("mis-certificados");
     } else {
       setActiveMenu("mis-eventos");
     }
   }, [location.pathname]);
+
+  // Guardas DESPUÉS de los hooks (nunca antes, o se rompe el orden de hooks)
+  if (!user) return <Navigate to="/login" replace />;
+  // 🔒 El área de administración no se mezcla con el portal del alumno
+  if (user.rol === "admin") return <Navigate to="/dashboard" replace />;
+
+  const nombreCompleto =
+    [user?.nombre, user?.apellido].filter(Boolean).join(" ") ||
+    user?.name ||
+    user?.email ||
+    "Participante";
 
   // Menú de navegación lateral para el participante
   const menuItems = [
@@ -60,6 +70,12 @@ export default function ParticipantLayout() {
       label: "Mis Materiales",
       icon: "📁",
       path: "/portal/materiales",
+    },
+    {
+      id: "mis-encuestas",
+      label: "Mis Encuestas",
+      icon: "📝",
+      path: "/portal/encuestas",
     },
     {
       id: "mis-certificados",
@@ -125,10 +141,10 @@ export default function ParticipantLayout() {
         <div className="p-4 border-t border-slate-800">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold">
-              {user?.name?.charAt(0)}
+              {nombreCompleto.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user?.name}</p>
+              <p className="text-sm font-medium truncate">{nombreCompleto}</p>
               <p className="text-xs text-slate-500 truncate">{user?.email}</p>
             </div>
           </div>

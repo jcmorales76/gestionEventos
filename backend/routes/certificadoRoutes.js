@@ -8,6 +8,14 @@ router.get(
   certificadoController.getCertificadosByParticipante,
 );
 router.get(
+  "/mis/:usuarioId",
+  certificadoController.getMisCertificados,
+);
+router.post(
+  "/participante/generar/:inscripcionId",
+  certificadoController.generarCertificadoParticipante,
+);
+router.get(
   "/verificar-eventos",
   certificadoController.verificarEventosFinalizados,
 );

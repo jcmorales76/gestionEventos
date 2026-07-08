@@ -15,9 +15,14 @@ export default function Login() {
     setLoading(true);
 
     try {
-      await login(email, password);
+      const usuario = await login(email, password);
       toast.success("¡Bienvenido a FEPCMAC!");
-      navigate("/dashboard");
+      // Redirigir según el rol
+      if (usuario?.rol === "participante") {
+        navigate("/portal");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (error) {
       toast.error(error.message);
     } finally {

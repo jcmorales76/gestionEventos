@@ -68,8 +68,17 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // Actualiza el usuario en memoria y en localStorage (p. ej. tras editar perfil)
+  const updateUser = (updates) => {
+    setUser((prev) => {
+      const merged = { ...prev, ...updates };
+      localStorage.setItem("eventflow_user", JSON.stringify(merged));
+      return merged;
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
