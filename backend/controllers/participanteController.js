@@ -45,6 +45,29 @@ exports.createParticipante = async (req, res) => {
   }
 };
 
+// Actualizar participante
+exports.updateParticipante = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nombre, apellido, email, dni, telefono, estado } = req.body;
+
+    await pool.query(
+      "UPDATE usuarios SET nombre=?, apellido=?, email=?, dni=?, telefono=?, estado=? WHERE id=?",
+      [nombre, apellido, email, dni, telefono, estado || "Activo", id]
+    );
+
+    res.json({ message: "Participante actualizado exitosamente" });
+  } catch (error) {
+    console.error("Error al actualizar participante:", error);
+    if (error.code === "ER_DUP_ENTRY") {
+      return res
+        .status(400)
+        .json({ message: "El correo electrónico ya está registrado" });
+    }
+    res.status(500).json({ message: "Error al actualizar participante" });
+  }
+};
+
 // Eliminar participante
 exports.deleteParticipante = async (req, res) => {
   try {

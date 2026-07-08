@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import ModalNuevoParticipante from "../components/modals/ModalNuevoParticipante";
+import Modal from "../components/Modal";
 
 export default function Participantes() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -11,6 +12,8 @@ export default function Participantes() {
 
   // Estado para el modal
   const [modalParticipanteOpen, setModalParticipanteOpen] = useState(false);
+  const [participanteEditando, setParticipanteEditando] = useState(null);
+  const [participanteAEliminar, setParticipanteAEliminar] = useState(null);
 
   // Cargar participantes
   useEffect(() => {
@@ -67,8 +70,26 @@ export default function Participantes() {
     return matchSearch && matchEvento && matchEstado;
   });
 
-  // Crear participante
-  const handleNuevoParticipante = async (data) => {
+  // Abrir modal en modo crear
+  const abrirNuevo = () => {
+    setParticipanteEditando(null);
+    setModalParticipanteOpen(true);
+  };
+
+  // Abrir modal en modo edición
+  const abrirEditar = (part) => {
+    setParticipanteEditando(part);
+    setModalParticipanteOpen(true);
+  };
+
+  const cerrarModal = () => {
+    setModalParticipanteOpen(false);
+    setParticipanteEditando(null);
+  };
+
+  // Crear o actualizar participante
+  const handleGuardarParticipante = async (data) => {
+    const esEdicion = Boolean(participanteEditando);
     try {
       const payload = {
         nombre: data.nombre,
@@ -77,18 +98,26 @@ export default function Participantes() {
         dni: data.dni,
         telefono: data.telefono,
         estado: data.estado,
-        evento: data.evento, // El nombre del evento seleccionado
+        evento: data.evento, // El nombre del evento seleccionado (solo al crear)
       };
 
-      const response = await fetch("http://localhost:5000/api/participantes", {
-        method: "POST",
+      const url = esEdicion
+        ? `http://localhost:5000/api/participantes/${participanteEditando.id}`
+        : "http://localhost:5000/api/participantes";
+
+      const response = await fetch(url, {
+        method: esEdicion ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       if (response.ok) {
-        setModalParticipanteOpen(false);
-        toast.success("✅ Participante registrado exitosamente");
+        cerrarModal();
+        toast.success(
+          esEdicion
+            ? "✅ Participante actualizado exitosamente"
+            : "✅ Participante registrado exitosamente",
+        );
         fetchParticipantes(); // Recargar lista
       } else {
         const error = await response.json();
@@ -99,9 +128,10 @@ export default function Participantes() {
     }
   };
 
-  // Eliminar
-  const handleEliminar = async (id) => {
-    if (!window.confirm("¿Eliminar este participante?")) return;
+  // Confirmar eliminación (desde el modal de confirmación)
+  const confirmarEliminar = async () => {
+    if (!participanteAEliminar) return;
+    const id = participanteAEliminar.id;
     try {
       const response = await fetch(
         `http://localhost:5000/api/participantes/${id}`,
@@ -117,6 +147,8 @@ export default function Participantes() {
       }
     } catch (error) {
       toast.error("Error de conexión");
+    } finally {
+      setParticipanteAEliminar(null);
     }
   };
 
@@ -143,10 +175,7 @@ export default function Participantes() {
         </div>
         <div className="flex gap-3">
           <button className="btn-secondary">📥 Importar CSV</button>
-          <button
-            onClick={() => setModalParticipanteOpen(true)}
-            className="btn-primary"
-          >
+          <button onClick={abrirNuevo} className="btn-primary">
             + Nuevo Participante
           </button>
         </div>
@@ -243,14 +272,16 @@ export default function Participantes() {
                   </td>
                   <td className="table-td">
                     <div className="flex items-center gap-2">
-                      <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                        ️
-                      </button>
-                      <button className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
+                      <button
+                        onClick={() => abrirEditar(part)}
+                        title="Editar participante"
+                        className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                      >
                         ✏️
                       </button>
                       <button
-                        onClick={() => handleEliminar(part.id)}
+                        onClick={() => setParticipanteAEliminar(part)}
+                        title="Eliminar participante"
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       >
                         🗑️
@@ -264,12 +295,55 @@ export default function Participantes() {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Modal crear / editar */}
       <ModalNuevoParticipante
         isOpen={modalParticipanteOpen}
-        onClose={() => setModalParticipanteOpen(false)}
-        onSave={handleNuevoParticipante}
+        onClose={cerrarModal}
+        onSave={handleGuardarParticipante}
+        participante={participanteEditando}
       />
+
+      {/* Modal de confirmación de eliminación */}
+      <Modal
+        isOpen={Boolean(participanteAEliminar)}
+        onClose={() => setParticipanteAEliminar(null)}
+        title="Eliminar participante"
+        size="sm"
+        footer={
+          <>
+            <button
+              onClick={() => setParticipanteAEliminar(null)}
+              className="btn-secondary"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={confirmarEliminar}
+              className="px-4 py-2 rounded-lg font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors"
+            >
+              Eliminar
+            </button>
+          </>
+        }
+      >
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 text-2xl">
+            🗑️
+          </div>
+          <div>
+            <p className="text-gray-800">
+              ¿Seguro que deseas eliminar a{" "}
+              <span className="font-semibold">
+                {participanteAEliminar?.nombre} {participanteAEliminar?.apellido}
+              </span>
+              ?
+            </p>
+            <p className="text-sm text-gray-500 mt-1">
+              Esta acción no se puede deshacer.
+            </p>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

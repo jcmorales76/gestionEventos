@@ -9,6 +9,7 @@ const materialRoutes = require("./routes/materialRoutes");
 const certificadoRoutes = require("./routes/certificadoRoutes");
 const inscripcionRoutes = require("./routes/inscripcionRoutes");
 const plantillaRoutes = require("./routes/plantillaRoutes");
+const importacionRoutes = require("./routes/importacionRoutes");
 const path = require("path");
 
 const app = express();
@@ -35,6 +36,7 @@ app.use(
   express.static(path.join(__dirname, "uploads/certificados")),
 );
 app.use("/api/plantillas", plantillaRoutes);
+app.use("/api/importacion", importacionRoutes);
 app.use(
   "/uploads/plantillas",
   express.static(path.join(__dirname, "uploads/plantillas")),

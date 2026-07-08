@@ -65,16 +65,34 @@ const PrivateLayout = () => {
     fetchSystemConfig();
   }, []);
 
-  const menuItems = [
-    { path: "/dashboard", label: "Dashboard", icon: "📊" },
-    { path: "/eventos", label: "Eventos", icon: "📅" },
-    { path: "/participantes", label: "Participantes", icon: "👥" },
-    { path: "/materiales", label: "Materiales", icon: "📁" },
-    { path: "/certificados", label: "Certificados", icon: "📜" },
-    { path: "/usuarios", label: "Usuarios", icon: "👤" },
-    { path: "/reportes", label: "Reportes", icon: "📈" },
-    { path: "/importacion", label: "Importación Masiva", icon: "📥" },
-    { path: "/configuracion", label: "Configuración", icon: "⚙️" },
+  const menuGroups = [
+    {
+      title: "General",
+      items: [{ path: "/dashboard", label: "Dashboard", icon: "📊" }],
+    },
+    {
+      title: "Gestión",
+      items: [
+        { path: "/eventos", label: "Eventos", icon: "📅" },
+        { path: "/participantes", label: "Participantes", icon: "👥" },
+        { path: "/materiales", label: "Materiales", icon: "📁" },
+        { path: "/certificados", label: "Certificados", icon: "📜" },
+      ],
+    },
+    {
+      title: "Datos y Herramientas",
+      items: [
+        { path: "/reportes", label: "Reportes", icon: "📈" },
+        { path: "/importacion", label: "Importación Masiva", icon: "📥" },
+      ],
+    },
+    {
+      title: "Administración",
+      items: [
+        { path: "/usuarios", label: "Usuarios", icon: "👤" },
+        { path: "/configuracion", label: "Configuración", icon: "⚙️" },
+      ],
+    },
   ];
 
   return (
@@ -108,24 +126,33 @@ const PrivateLayout = () => {
         </div>
 
         {/* Navegación */}
-        <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
-          {menuItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-sm font-medium ${
-                  isActive
-                    ? "bg-red-600 text-white shadow-lg"
-                    : "text-white/70 hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                <span className="text-lg">{item.icon}</span>
-                <span className="truncate">{item.label}</span>
-              </Link>
-            );
-          })}
+        <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
+          {menuGroups.map((group) => (
+            <div key={group.title}>
+              <p className="px-4 mb-1 text-[11px] font-semibold uppercase tracking-wider text-white/40">
+                {group.title}
+              </p>
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-sm font-medium ${
+                        isActive
+                          ? "bg-red-600 text-white shadow-lg"
+                          : "text-white/70 hover:bg-white/10 hover:text-white"
+                      }`}
+                    >
+                      <span className="text-lg">{item.icon}</span>
+                      <span className="truncate">{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* Usuario */}

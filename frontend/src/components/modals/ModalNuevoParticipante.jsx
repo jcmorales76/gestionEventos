@@ -1,24 +1,45 @@
 import { useState, useEffect } from "react";
 import Modal from "../Modal";
 
-export default function ModalNuevoParticipante({ isOpen, onClose, onSave }) {
-  const [eventos, setEventos] = useState([]);
-  const [form, setForm] = useState({
-    nombre: "",
-    apellido: "",
-    email: "",
-    dni: "",
-    telefono: "",
-    evento: "",
-    estado: "Activo",
-  });
+const FORM_VACIO = {
+  nombre: "",
+  apellido: "",
+  email: "",
+  dni: "",
+  telefono: "",
+  evento: "",
+  estado: "Activo",
+};
 
-  // Cargar eventos al abrir el modal
+export default function ModalNuevoParticipante({
+  isOpen,
+  onClose,
+  onSave,
+  participante = null,
+}) {
+  const esEdicion = Boolean(participante);
+  const [eventos, setEventos] = useState([]);
+  const [form, setForm] = useState(FORM_VACIO);
+
+  // Cargar eventos y prellenar el formulario al abrir el modal
   useEffect(() => {
     if (isOpen) {
       fetchEventos();
+      if (participante) {
+        setForm({
+          nombre: participante.nombre || "",
+          apellido: participante.apellido || "",
+          email: participante.email || "",
+          dni: participante.dni || "",
+          telefono: participante.telefono || "",
+          evento: participante.evento || "",
+          estado: participante.estado || "Activo",
+        });
+      } else {
+        setForm(FORM_VACIO);
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, participante]);
 
   const fetchEventos = async () => {
     try {
@@ -45,14 +66,14 @@ export default function ModalNuevoParticipante({ isOpen, onClose, onSave }) {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Nuevo Participante"
+      title={esEdicion ? "Editar Participante" : "Nuevo Participante"}
       footer={
         <>
           <button onClick={onClose} className="btn-secondary">
             Cancelar
           </button>
           <button onClick={handleSubmit} className="btn-primary">
-            Guardar
+            {esEdicion ? "Actualizar" : "Guardar"}
           </button>
         </>
       }
@@ -108,22 +129,24 @@ export default function ModalNuevoParticipante({ isOpen, onClose, onSave }) {
               className="input-field"
             />
           </div>
-          <div className="col-span-2">
-            <label className="label-input">Evento</label>
-            <select
-              name="evento"
-              value={form.evento}
-              onChange={handleChange}
-              className="input-field"
-            >
-              <option value="">-- Sin evento asignado --</option>
-              {eventos.map((evento) => (
-                <option key={evento.id} value={evento.nombre}>
-                  {evento.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
+          {!esEdicion && (
+            <div className="col-span-2">
+              <label className="label-input">Evento</label>
+              <select
+                name="evento"
+                value={form.evento}
+                onChange={handleChange}
+                className="input-field"
+              >
+                <option value="">-- Sin evento asignado --</option>
+                {eventos.map((evento) => (
+                  <option key={evento.id} value={evento.nombre}>
+                    {evento.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="label-input">Estado</label>
             <select
