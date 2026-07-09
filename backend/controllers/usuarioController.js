@@ -1,4 +1,46 @@
 const pool = require("../config/db");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+
+// ===== Subida de foto de perfil (avatar) =====
+const avatarStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, "../uploads/avatars");
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase() || ".png";
+    cb(null, `avatar_${req.params.id}_${Date.now()}${ext}`);
+  },
+});
+const uploadAvatar = multer({
+  storage: avatarStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) =>
+    cb(null, /jpeg|jpg|png|gif|webp/.test(file.mimetype)),
+});
+exports.uploadAvatar = uploadAvatar;
+
+// Guardar la foto de perfil de un usuario
+exports.uploadFoto = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No se subió ninguna imagen" });
+    }
+    const { id } = req.params;
+    const fotoUrl = `/uploads/avatars/${req.file.filename}`;
+    await pool.query("UPDATE usuarios SET foto_url = ? WHERE id = ?", [
+      fotoUrl,
+      id,
+    ]);
+    res.json({ message: "Foto actualizada", foto_url: fotoUrl });
+  } catch (error) {
+    console.error("Error al subir foto:", error);
+    res.status(500).json({ message: "Error al subir la foto" });
+  }
+};
 
 // Obtener todos los usuarios (admins y participantes)
 exports.getUsuarios = async (req, res) => {

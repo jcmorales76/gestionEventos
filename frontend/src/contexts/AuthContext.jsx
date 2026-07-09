@@ -49,11 +49,8 @@ export const AuthProvider = ({ children }) => {
 
       setUser(data.user);
 
-      // 🔒 Verificar si la contraseña expiró
-      if (data.user.passwordExpired) {
-        // Redirección forzada
-        window.location.href = "/cambiar-password";
-      }
+      // El redirect por contraseña expirada lo maneja Login.jsx / las guardas
+      // de los layouts, según data.user.passwordExpired.
 
       return data.user;
     } catch (error) {

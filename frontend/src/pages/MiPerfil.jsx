@@ -14,11 +14,37 @@ export default function MiPerfil() {
   const [pwd, setPwd] = useState({ actual: "", nueva: "", confirmar: "" });
   const [savingPerfil, setSavingPerfil] = useState(false);
   const [savingPwd, setSavingPwd] = useState(false);
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
   const handlePwdChange = (e) =>
     setPwd({ ...pwd, [e.target.name]: e.target.value });
+
+  const handleFoto = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setSubiendoFoto(true);
+    const fd = new FormData();
+    fd.append("foto", file);
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/usuarios/${user.id}/foto`,
+        { method: "POST", body: fd },
+      );
+      const data = await res.json();
+      if (res.ok) {
+        updateUser({ foto_url: data.foto_url });
+        toast.success("✅ Foto actualizada");
+      } else {
+        toast.error(data.message || "Error al subir la foto");
+      }
+    } catch (error) {
+      toast.error("Error de conexión");
+    } finally {
+      setSubiendoFoto(false);
+    }
+  };
 
   const guardarPerfil = async () => {
     if (!form.nombre || !form.apellido) {
@@ -101,6 +127,34 @@ export default function MiPerfil() {
       {/* Datos personales */}
       <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
         <h2 className="text-xl font-bold text-gray-900 mb-6">Mi Perfil</h2>
+
+        {/* Foto de perfil */}
+        <div className="flex items-center gap-4 mb-6">
+          {user?.foto_url ? (
+            <img
+              src={`http://localhost:5000${user.foto_url}`}
+              alt="Foto de perfil"
+              className="w-20 h-20 rounded-full object-cover ring-4 ring-primary-500/15"
+            />
+          ) : (
+            <div className="w-20 h-20 rounded-full bg-brand-gradient flex items-center justify-center text-white text-2xl font-bold ring-4 ring-primary-500/15">
+              {(form.nombre || user?.email || "U").charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div>
+            <label className="btn-secondary cursor-pointer inline-flex">
+              {subiendoFoto ? "Subiendo..." : "📷 Cambiar foto"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFoto}
+                disabled={subiendoFoto}
+              />
+            </label>
+            <p className="text-xs text-gray-400 mt-1">JPG o PNG · máx 5MB</p>
+          </div>
+        </div>
 
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

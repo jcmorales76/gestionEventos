@@ -1,6 +1,7 @@
 import { Outlet, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useEffect, useState } from "react";
+import UserMenu from "../components/UserMenu";
 
 export default function ParticipantLayout() {
   const { user, logout } = useAuth();
@@ -53,6 +54,9 @@ export default function ParticipantLayout() {
 
   // Guardas DESPUÉS de los hooks (nunca antes, o se rompe el orden de hooks)
   if (!user) return <Navigate to="/login" replace />;
+  // 🔒 Contraseña expirada: forzar cambio antes de cualquier otra cosa
+  if (user.passwordExpired)
+    return <Navigate to="/cambiar-password" replace />;
   // 🔒 El área de administración no se mezcla con el portal del alumno
   if (user.rol === "admin") return <Navigate to="/dashboard" replace />;
 
@@ -91,11 +95,14 @@ export default function ParticipantLayout() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-transparent">
       {/* Sidebar Participante */}
-      <aside className="w-64 bg-slate-900 text-white flex-shrink-0 flex flex-col">
-        {/* Logo - ✅ MEJORADO: Logo dinámico */}
-        <div className="p-6 flex items-center gap-3 border-b border-slate-800">
+      <aside className="w-64 bg-slate-900 text-white flex-shrink-0 flex flex-col bg-gradient-to-b from-white/[0.05] to-black/30 relative">
+        {/* Acento superior de marca */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-brand-gradient" />
+
+        {/* Logo */}
+        <div className="p-6 flex items-center gap-3 border-b border-white/10">
           {systemLogo ? (
             <img
               src={systemLogo}
@@ -103,12 +110,12 @@ export default function ParticipantLayout() {
               className="h-10 w-auto object-contain rounded-lg"
             />
           ) : (
-            <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center font-bold">
+            <div className="w-10 h-10 bg-brand-gradient rounded-xl flex items-center justify-center font-bold shadow-glow">
               F
             </div>
           )}
           <div className="min-w-0">
-            <span className="font-bold text-lg block leading-tight truncate">
+            <span className="font-heading font-bold text-lg block leading-tight truncate">
               {systemName}
             </span>
             <span className="text-xs text-slate-400 block">Portal Alumno</span>
@@ -125,10 +132,10 @@ export default function ParticipantLayout() {
                 e.preventDefault();
                 handleMenuClick(item.path);
               }}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-sm ${
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all text-sm font-medium ${
                 activeMenu === item.id
-                  ? "bg-red-600 text-white shadow-md"
-                  : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                  ? "bg-brand-gradient text-white shadow-glow"
+                  : "text-slate-300 hover:bg-white/10 hover:text-white"
               }`}
             >
               <span className="text-lg">{item.icon}</span>
@@ -138,9 +145,9 @@ export default function ParticipantLayout() {
         </nav>
 
         {/* Usuario */}
-        <div className="p-4 border-t border-slate-800">
+        <div className="p-4 border-t border-white/10">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold">
+            <div className="w-10 h-10 rounded-full bg-brand-gradient ring-2 ring-white/20 flex items-center justify-center text-sm font-bold">
               {nombreCompleto.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
@@ -150,7 +157,7 @@ export default function ParticipantLayout() {
           </div>
           <button
             onClick={logout}
-            className="w-full py-2 text-xs text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+            className="w-full py-2 text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
           >
             Cerrar Sesión
           </button>
@@ -159,14 +166,15 @@ export default function ParticipantLayout() {
 
       {/* Contenido Principal */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header Simple */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-          <h2 className="text-lg font-semibold text-gray-800">
+        {/* Header */}
+        <header className="h-16 glass flex items-center justify-between px-6 relative z-40">
+          <h2 className="text-lg font-bold text-secondary-800 font-heading">
             {menuItems.find((m) => m.id === activeMenu)?.label || "Bienvenido"}
           </h2>
+          <UserMenu profilePath="/portal/perfil" />
         </header>
 
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-6 animate-enter">
           <Outlet />
         </main>
       </div>

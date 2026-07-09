@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
 export default function CambiarPassword() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ actual: "", nueva: "", confirmar: "" });
   const [loading, setLoading] = useState(false);
@@ -33,12 +33,14 @@ export default function CambiarPassword() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      // Actualizar usuario en contexto
-      const updatedUser = { ...user, passwordExpired: false };
-      localStorage.setItem("eventflow_user", JSON.stringify(updatedUser));
+      // Limpiar el flag de expiración en el contexto y localStorage
+      updateUser({ passwordExpired: false });
 
       toast.success("✅ Contraseña actualizada. Redirigiendo...");
-      setTimeout(() => navigate("/dashboard"), 1500);
+      setTimeout(
+        () => navigate(user.rol === "participante" ? "/portal" : "/dashboard"),
+        1500,
+      );
     } catch (err) {
       toast.error(err.message);
     } finally {

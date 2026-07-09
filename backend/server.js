@@ -11,6 +11,7 @@ const inscripcionRoutes = require("./routes/inscripcionRoutes");
 const plantillaRoutes = require("./routes/plantillaRoutes");
 const importacionRoutes = require("./routes/importacionRoutes");
 const encuestaRoutes = require("./routes/encuestaRoutes");
+const statsRoutes = require("./routes/statsRoutes");
 const path = require("path");
 
 const app = express();
@@ -39,6 +40,7 @@ app.use(
 app.use("/api/plantillas", plantillaRoutes);
 app.use("/api/importacion", importacionRoutes);
 app.use("/api/encuestas", encuestaRoutes);
+app.use("/api/stats", statsRoutes);
 app.use(
   "/uploads/plantillas",
   express.static(path.join(__dirname, "uploads/plantillas")),

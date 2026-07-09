@@ -16,6 +16,12 @@ export default function Login() {
 
     try {
       const usuario = await login(email, password);
+      // 🔒 Si la contraseña expiró, forzar el cambio antes de entrar
+      if (usuario?.passwordExpired) {
+        toast("Tu contraseña ha expirado. Debes cambiarla.", { icon: "🔒" });
+        navigate("/cambiar-password");
+        return;
+      }
       toast.success("¡Bienvenido a FEPCMAC!");
       // Redirigir según el rol
       if (usuario?.rol === "participante") {
@@ -31,20 +37,24 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 py-10">
       <div className="max-w-md w-full">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 rounded-2xl bg-red-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <span className="text-white text-4xl font-bold">F</span>
+          <div className="w-20 h-20 rounded-2xl bg-brand-gradient flex items-center justify-center mx-auto mb-4 shadow-glow">
+            <span className="text-white text-4xl font-bold font-heading">F</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">FEPCMAC</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2 font-heading text-gradient">
+            FEPCMAC
+          </h1>
           <p className="text-gray-600">Gestión de Eventos</p>
         </div>
 
         {/* Formulario */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+        <div className="bg-white rounded-2xl shadow-card border border-secondary-100 overflow-hidden">
+          <div className="h-1.5 bg-brand-gradient" />
+          <div className="p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center font-heading">
             Iniciar Sesión
           </h2>
 
@@ -80,19 +90,20 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-brand-gradient text-white font-semibold py-3 rounded-xl transition-all duration-200 shadow-sm hover:shadow-glow hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Ingresando..." : "Ingresar"}
             </button>
           </form>
 
           {/* Credenciales de prueba */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+          <div className="mt-6 p-4 bg-secondary-50 rounded-xl border border-secondary-100">
             <p className="text-xs text-gray-600 font-medium mb-2">
               Credenciales de prueba:
             </p>
             <p className="text-xs text-gray-500">Email: admin@fepcmac.com</p>
             <p className="text-xs text-gray-500">Contraseña: 123456</p>
+          </div>
           </div>
         </div>
       </div>

@@ -11,6 +11,7 @@ export default function Eventos() {
   const [filterEstado, setFilterEstado] = useState("Todos");
   const [eventos, setEventos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [vista, setVista] = useState("tarjetas"); // "tarjetas" | "lista"
 
   // Estados para modales
   const [modalNuevoOpen, setModalNuevoOpen] = useState(false);
@@ -23,6 +24,14 @@ export default function Eventos() {
   // Cargar eventos al montar
   useEffect(() => {
     fetchEventos();
+    // Honrar la vista por defecto configurada en el sistema
+    fetch("http://localhost:5000/api/config")
+      .then((r) => r.json())
+      .then((cfg) => {
+        const def = cfg?.vista_defecto_eventos?.valor;
+        if (def === "lista" || def === "tarjetas") setVista(def);
+      })
+      .catch(() => {});
   }, []);
 
   const fetchEventos = async () => {
@@ -256,21 +265,35 @@ export default function Eventos() {
           </p>
         </div>
         <div className="flex gap-3">
-          <button className="btn-secondary">
+          <button
+            className="btn-secondary"
+            onClick={() =>
+              setVista((v) => (v === "tarjetas" ? "lista" : "tarjetas"))
+            }
+          >
             <svg
               className="w-5 h-5 inline mr-2"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 10h16M4 14h16M4 18h16"
-              />
+              {vista === "tarjetas" ? (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 10h16M4 14h16M4 18h16"
+                />
+              ) : (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                />
+              )}
             </svg>
-            Vista Lista
+            {vista === "tarjetas" ? "Vista Lista" : "Vista Tarjetas"}
           </button>
           <button
             className="btn-primary"
@@ -331,8 +354,9 @@ export default function Eventos() {
         </div>
       </div>
 
-      {/* Grid de Tarjetas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Vista Tarjetas / Lista */}
+      {vista === "tarjetas" ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {eventosFiltrados.map((evento) => (
           <div
             key={evento.id}
@@ -505,7 +529,100 @@ export default function Eventos() {
             </div>
           </div>
         ))}
-      </div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="table-base">
+              <thead className="table-header">
+                <tr>
+                  <th className="table-th">Evento</th>
+                  <th className="table-th">Fecha</th>
+                  <th className="table-th">Lugar</th>
+                  <th className="table-th">Inscritos</th>
+                  <th className="table-th">Estado</th>
+                  <th className="table-th">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {eventosFiltrados.map((evento) => (
+                  <tr key={evento.id} className="hover:bg-gray-50">
+                    <td className="table-td">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${evento.bgBadge}`}
+                        >
+                          {evento.tipo}
+                        </span>
+                        <span className="font-medium text-gray-900">
+                          {evento.nombre}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="table-td text-sm text-gray-600">
+                      {evento.fecha}
+                    </td>
+                    <td className="table-td text-sm text-gray-600">
+                      {evento.lugar}
+                    </td>
+                    <td className="table-td">
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${evento.capacidad > 0 ? (evento.inscritos / evento.capacidad) * 100 : 0}%`,
+                              backgroundColor: evento.colorHex || "#dc2626",
+                            }}
+                          />
+                        </div>
+                        <span className="text-xs text-gray-600">
+                          {evento.inscritos}/{evento.capacidad}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="table-td">
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getEstadoBadge(evento.estado)}`}
+                      >
+                        {evento.estado}
+                      </span>
+                    </td>
+                    <td className="table-td">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleVerDetalle(evento)}
+                          className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
+                          title="Ver detalles"
+                        >
+                          👁️
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEventoSeleccionado(evento);
+                            handleAbrirEditar();
+                          }}
+                          className="p-1.5 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded"
+                          title="Editar"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => handleEliminarClick(evento)}
+                          className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"
+                          title="Eliminar"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {eventosFiltrados.length === 0 && (
         <div className="text-center py-12">

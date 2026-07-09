@@ -4,9 +4,14 @@ const pool = require("../config/db");
 exports.getEventos = async (req, res) => {
   try {
     const [eventos] = await pool.query(
-      "SELECT * FROM eventos ORDER BY fecha_inicio DESC",
+      `SELECT e.*,
+              (SELECT COUNT(*) FROM inscripciones i WHERE i.evento_id = e.id) AS inscritos_reales
+       FROM eventos e
+       ORDER BY e.fecha_inicio DESC`,
     );
-    res.json(eventos);
+    // El conteo real de inscritos se calcula desde inscripciones (la columna
+    // eventos.inscritos quedaba desactualizada).
+    res.json(eventos.map((e) => ({ ...e, inscritos: e.inscritos_reales })));
   } catch (error) {
     console.error("Error al obtener eventos:", error);
     res.status(500).json({ message: "Error al obtener eventos" });
@@ -129,15 +134,19 @@ exports.deleteEvento = async (req, res) => {
 exports.getEventoById = async (req, res) => {
   try {
     const { id } = req.params;
-    const [eventos] = await pool.query("SELECT * FROM eventos WHERE id=?", [
-      id,
-    ]);
+    const [eventos] = await pool.query(
+      `SELECT e.*,
+              (SELECT COUNT(*) FROM inscripciones i WHERE i.evento_id = e.id) AS inscritos_reales
+       FROM eventos e WHERE e.id = ?`,
+      [id],
+    );
 
     if (eventos.length === 0) {
       return res.status(404).json({ message: "Evento no encontrado" });
     }
 
-    res.json(eventos[0]);
+    const ev = eventos[0];
+    res.json({ ...ev, inscritos: ev.inscritos_reales });
   } catch (error) {
     console.error("Error al obtener evento:", error);
     res.status(500).json({ message: "Error al obtener evento" });
