@@ -17,7 +17,7 @@ export default function Importacion() {
 
   const fetchEventos = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/eventos");
+      const res = await fetch("/api/eventos");
       if (res.ok) {
         setEventos(await res.json());
       }
@@ -91,7 +91,7 @@ export default function Importacion() {
     setCargando(true);
     setResultado(null);
     try {
-      const res = await fetch("http://localhost:5000/api/importacion", {
+      const res = await fetch("/api/importacion", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ eventoId, participantes: filas }),

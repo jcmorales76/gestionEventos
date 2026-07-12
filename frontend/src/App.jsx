@@ -45,18 +45,24 @@ const PrivateLayout = () => {
   const location = useLocation();
   const [systemLogo, setSystemLogo] = useState(null);
   const [config, setConfig] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Cerrar el menú móvil al cambiar de ruta
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
 
   // Cargar logo y configuración del sistema
   useEffect(() => {
     const fetchSystemConfig = async () => {
       try {
-        const logoRes = await fetch("http://localhost:5000/api/config/logo");
+        const logoRes = await fetch("/api/config/logo");
         const logoData = await logoRes.json();
         if (logoData.logoUrl) {
-          setSystemLogo(`http://localhost:5000${logoData.logoUrl}`);
+          setSystemLogo(`${logoData.logoUrl}`);
         }
 
-        const configRes = await fetch("http://localhost:5000/api/config");
+        const configRes = await fetch("/api/config");
         const configData = await configRes.json();
         setConfig(configData);
       } catch (error) {
@@ -113,13 +119,22 @@ const PrivateLayout = () => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-transparent">
-      {/* Sidebar - SIEMPRE VISIBLE */}
+      {/* Backdrop del menú en móvil */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      {/* Sidebar (drawer en móvil, fijo en escritorio) */}
       <aside
         style={{ backgroundColor: theme.sidebarBg || "#0f172a" }}
-        className="w-64 flex-shrink-0 flex flex-col text-white transition-all duration-300 bg-gradient-to-b from-white/[0.05] to-black/30 relative"
+        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 flex-shrink-0 flex flex-col text-white transition-transform duration-300 bg-gradient-to-b from-white/[0.05] to-black/30 lg:translate-x-0 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
         {/* Acento superior de marca */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-brand-gradient" />
+        <div className="h-1 bg-brand-gradient flex-shrink-0" />
 
         {/* Logo */}
         <div className="p-4 flex items-center gap-3 border-b border-white/10">
@@ -201,15 +216,36 @@ const PrivateLayout = () => {
       {/* Contenido Principal */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="h-16 glass flex items-center justify-between px-6 flex-shrink-0 relative z-40">
-          <h2 className="text-lg font-bold text-secondary-800 font-heading">
-            Panel de Administración
-          </h2>
+        <header className="h-16 glass flex items-center justify-between px-4 sm:px-6 flex-shrink-0 relative z-40">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden p-2 rounded-lg hover:bg-secondary-100 text-secondary-700"
+              aria-label="Abrir menú"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
+            <h2 className="text-base sm:text-lg font-bold text-secondary-800 font-heading">
+              Panel de Administración
+            </h2>
+          </div>
           <UserMenu profilePath="/perfil" />
         </header>
 
         {/* Main Content - Scrollable */}
-        <main className="flex-1 overflow-y-auto p-6 animate-enter">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 animate-enter">
           <Outlet />
         </main>
       </div>

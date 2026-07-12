@@ -14,6 +14,35 @@ export default function Configuracion() {
   // Estado para nombre del sistema (con botón de guardar)
   const [nombreSistema, setNombreSistema] = useState("");
 
+  // Prueba de correo (SMTP)
+  const [testEmailTo, setTestEmailTo] = useState("");
+  const [enviandoTest, setEnviandoTest] = useState(false);
+
+  const handleTestEmail = async () => {
+    if (!testEmailTo) {
+      toast.error("Escribe un correo destino");
+      return;
+    }
+    setEnviandoTest(true);
+    try {
+      const res = await fetch("/api/config/test-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: testEmailTo }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("✅ " + (data.message || "Correo enviado"));
+      } else {
+        toast.error(data.message || "No se pudo enviar");
+      }
+    } catch (error) {
+      toast.error("Error de conexión");
+    } finally {
+      setEnviandoTest(false);
+    }
+  };
+
   useEffect(() => {
     fetchConfig();
     fetchLogo();
@@ -28,7 +57,7 @@ export default function Configuracion() {
 
   const fetchConfig = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/config");
+      const res = await fetch("/api/config");
       const data = await res.json();
       setConfig(data);
     } catch (error) {
@@ -40,10 +69,10 @@ export default function Configuracion() {
 
   const fetchLogo = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/config/logo");
+      const res = await fetch("/api/config/logo");
       const data = await res.json();
       if (data.logoUrl) {
-        setLogoPreview(`http://localhost:5000${data.logoUrl}`);
+        setLogoPreview(`${data.logoUrl}`);
       }
     } catch (error) {
       console.error("Error cargando logo:", error);
@@ -53,7 +82,7 @@ export default function Configuracion() {
   const handleSave = async (clave, valor) => {
     setSaving(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/config/${clave}`, {
+      const res = await fetch(`/api/config/${clave}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ valor: valor || "" }),
@@ -98,7 +127,7 @@ export default function Configuracion() {
     formData.append("logo", logoFile);
 
     try {
-      const res = await fetch("http://localhost:5000/api/config/logo", {
+      const res = await fetch("/api/config/logo", {
         method: "POST",
         body: formData,
       });
@@ -331,6 +360,37 @@ export default function Configuracion() {
               <option value="lista">Lista (Tabla)</option>
             </select>
           </div>
+        </div>
+      </div>
+
+      {/* Correo (SMTP) */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 className="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+          ✉️ Correo (SMTP)
+        </h2>
+        <p className="text-sm text-gray-500 mb-4">
+          El envío de correos se configura con variables de entorno en el
+          hosting (SMTP_HOST, SMTP_USER, SMTP_PASS...). Usa esta prueba para
+          verificar que funcione.
+        </p>
+        <div className="flex flex-col md:flex-row md:items-end gap-3">
+          <div className="flex-1">
+            <label className="label-input">Enviar correo de prueba a:</label>
+            <input
+              type="email"
+              value={testEmailTo}
+              onChange={(e) => setTestEmailTo(e.target.value)}
+              placeholder="tucorreo@ejemplo.com"
+              className="input-field md:w-96"
+            />
+          </div>
+          <button
+            onClick={handleTestEmail}
+            disabled={enviandoTest}
+            className="btn-primary disabled:opacity-50"
+          >
+            {enviandoTest ? "Enviando..." : "Enviar prueba"}
+          </button>
         </div>
       </div>
     </div>

@@ -25,7 +25,7 @@ export default function Certificados() {
 
   const fetchEventos = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/eventos");
+      const res = await fetch("/api/eventos");
       const data = await res.json();
       setEventos(data);
     } catch (error) {
@@ -38,7 +38,7 @@ export default function Certificados() {
     setLoading(true);
     try {
       const res = await fetch(
-        `http://localhost:5000/api/inscripciones/evento/${eventoSeleccionado}`,
+        `/api/inscripciones/evento/${eventoSeleccionado}`,
       );
       const data = await res.json();
 
@@ -56,7 +56,7 @@ export default function Certificados() {
     if (!eventoSeleccionado) return;
     try {
       const res = await fetch(
-        `http://localhost:5000/api/certificados/evento/${eventoSeleccionado}`,
+        `/api/certificados/evento/${eventoSeleccionado}`,
       );
       const data = await res.json();
 
@@ -84,7 +84,7 @@ export default function Certificados() {
 
   setGenerando(true);
   try {
-    const res = await fetch(`http://localhost:5000/api/plantillas/generar-masivo/${eventoSeleccionado}`, {
+    const res = await fetch(`/api/plantillas/generar-masivo/${eventoSeleccionado}`, {
       method: 'POST'
     });
     
@@ -105,7 +105,7 @@ export default function Certificados() {
   const handleGenerarIndividual = async (inscripcionId, nombre) => {
     try {
       const res = await fetch(
-        `http://localhost:5000/api/certificados/generar/${inscripcionId}`,
+        `/api/certificados/generar/${inscripcionId}`,
         {
           method: "POST",
         },
@@ -114,7 +114,7 @@ export default function Certificados() {
       const data = await res.json();
       if (res.ok) {
         toast.success(`✅ Certificado de ${nombre} generado`);
-        window.open(`http://localhost:5000${data.url}`, "_blank");
+        window.open(`${data.url}`, "_blank");
         fetchCertificados();
       } else {
         toast.error(data.message || "Error al generar");
@@ -332,7 +332,7 @@ export default function Certificados() {
                                 );
                                 if (cert)
                                   window.open(
-                                    `http://localhost:5000${cert.url_pdf}`,
+                                    `${cert.url_pdf}`,
                                     "_blank",
                                   );
                               }}

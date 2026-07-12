@@ -25,7 +25,7 @@ export default function Encuestas() {
   const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/eventos")
+    fetch("/api/eventos")
       .then((r) => r.json())
       .then(setEventos)
       .catch(() => toast.error("Error al cargar eventos"));
@@ -39,7 +39,7 @@ export default function Encuestas() {
     setCargando(true);
     try {
       const res = await fetch(
-        `http://localhost:5000/api/encuestas/evento/${id}`,
+        `/api/encuestas/evento/${id}`,
       );
       const data = await res.json();
       setTitulo(data.encuesta?.titulo || "Encuesta de satisfacción");
@@ -124,7 +124,7 @@ export default function Encuestas() {
 
     setGuardando(true);
     try {
-      const res = await fetch("http://localhost:5000/api/encuestas", {
+      const res = await fetch("/api/encuestas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -8,6 +8,7 @@ export default function ParticipantLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [activeMenu, setActiveMenu] = useState("mis-eventos");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // ✅ NUEVO: Estados para logo y configuración
   const [systemLogo, setSystemLogo] = useState(null);
@@ -17,13 +18,13 @@ export default function ParticipantLayout() {
   useEffect(() => {
     const fetchSystemConfig = async () => {
       try {
-        const logoRes = await fetch("http://localhost:5000/api/config/logo");
+        const logoRes = await fetch("/api/config/logo");
         const logoData = await logoRes.json();
         if (logoData.logoUrl) {
-          setSystemLogo(`http://localhost:5000${logoData.logoUrl}`);
+          setSystemLogo(`${logoData.logoUrl}`);
         }
 
-        const configRes = await fetch("http://localhost:5000/api/config");
+        const configRes = await fetch("/api/config");
         const configData = await configRes.json();
         if (configData.nombre_sistema?.valor) {
           setSystemName(configData.nombre_sistema.valor);
@@ -36,8 +37,9 @@ export default function ParticipantLayout() {
     fetchSystemConfig();
   }, []);
 
-  // Sincronizar el menú activo con la ruta actual
+  // Sincronizar el menú activo con la ruta actual y cerrar el menú móvil
   useEffect(() => {
+    setSidebarOpen(false);
     const path = location.pathname;
     if (path.includes("/perfil")) {
       setActiveMenu("mi-perfil");
@@ -96,10 +98,21 @@ export default function ParticipantLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-transparent">
-      {/* Sidebar Participante */}
-      <aside className="w-64 bg-slate-900 text-white flex-shrink-0 flex flex-col bg-gradient-to-b from-white/[0.05] to-black/30 relative">
+      {/* Backdrop del menú en móvil */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      {/* Sidebar (drawer en móvil, fijo en escritorio) */}
+      <aside
+        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white flex-shrink-0 flex flex-col bg-gradient-to-b from-white/[0.05] to-black/30 transition-transform duration-300 lg:translate-x-0 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
         {/* Acento superior de marca */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-brand-gradient" />
+        <div className="h-1 bg-brand-gradient flex-shrink-0" />
 
         {/* Logo */}
         <div className="p-6 flex items-center gap-3 border-b border-white/10">
@@ -167,14 +180,35 @@ export default function ParticipantLayout() {
       {/* Contenido Principal */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="h-16 glass flex items-center justify-between px-6 relative z-40">
-          <h2 className="text-lg font-bold text-secondary-800 font-heading">
-            {menuItems.find((m) => m.id === activeMenu)?.label || "Bienvenido"}
-          </h2>
+        <header className="h-16 glass flex items-center justify-between px-4 sm:px-6 relative z-40">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden p-2 rounded-lg hover:bg-secondary-100 text-secondary-700"
+              aria-label="Abrir menú"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
+            <h2 className="text-base sm:text-lg font-bold text-secondary-800 font-heading">
+              {menuItems.find((m) => m.id === activeMenu)?.label || "Bienvenido"}
+            </h2>
+          </div>
           <UserMenu profilePath="/portal/perfil" />
         </header>
 
-        <main className="flex-1 overflow-y-auto p-6 animate-enter">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 animate-enter">
           <Outlet />
         </main>
       </div>

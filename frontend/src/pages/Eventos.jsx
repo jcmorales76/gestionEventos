@@ -25,7 +25,7 @@ export default function Eventos() {
   useEffect(() => {
     fetchEventos();
     // Honrar la vista por defecto configurada en el sistema
-    fetch("http://localhost:5000/api/config")
+    fetch("/api/config")
       .then((r) => r.json())
       .then((cfg) => {
         const def = cfg?.vista_defecto_eventos?.valor;
@@ -37,7 +37,7 @@ export default function Eventos() {
   const fetchEventos = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:5000/api/eventos");
+      const response = await fetch("/api/eventos");
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -154,7 +154,7 @@ export default function Eventos() {
         instructor: data.instructor || "",
       };
 
-      const response = await fetch("http://localhost:5000/api/eventos", {
+      const response = await fetch("/api/eventos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -193,7 +193,7 @@ export default function Eventos() {
       };
 
       const response = await fetch(
-        `http://localhost:5000/api/eventos/${data.id}`,
+        `/api/eventos/${data.id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -225,7 +225,7 @@ export default function Eventos() {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/eventos/${eventoAEliminar.id}`,
+        `/api/eventos/${eventoAEliminar.id}`,
         {
           method: "DELETE",
         },
@@ -334,22 +334,24 @@ export default function Eventos() {
             onChange={(e) => setFilterTipo(e.target.value)}
             className="input-field md:w-48"
           >
-            <option>Todos los tipos</option>
-            <option>Curso</option>
-            <option>Seminario</option>
-            <option>Taller</option>
-            <option>Congreso</option>
-            <option>Programa de Alta Dirección</option>
+            <option value="Todos">Todos los tipos</option>
+            <option value="Curso">Curso</option>
+            <option value="Seminario">Seminario</option>
+            <option value="Taller">Taller</option>
+            <option value="Congreso">Congreso</option>
+            <option value="Programa de Alta Dirección">
+              Programa de Alta Dirección
+            </option>
           </select>
           <select
             value={filterEstado}
             onChange={(e) => setFilterEstado(e.target.value)}
             className="input-field md:w-48"
           >
-            <option>Todos los estados</option>
-            <option>Activo</option>
-            <option>Próximo</option>
-            <option>Finalizado</option>
+            <option value="Todos">Todos los estados</option>
+            <option value="Activo">Activo</option>
+            <option value="Próximo">Próximo</option>
+            <option value="Finalizado">Finalizado</option>
           </select>
         </div>
       </div>

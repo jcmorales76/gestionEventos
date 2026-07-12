@@ -15,7 +15,7 @@ export default function MisEventos() {
     setLoading(true);
     try {
       const res = await fetch(
-        `http://localhost:5000/api/participantes/${user.id}/eventos`,
+        `/api/participantes/${user.id}/eventos`,
       );
       if (res.ok) setEventos(await res.json());
     } catch (error) {

@@ -27,7 +27,7 @@ export default function ModalNuevaSesion({
     setCreando(true);
     try {
       const res = await fetch(
-        "http://localhost:5000/api/materiales/crear-sesion",
+        "/api/materiales/crear-sesion",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

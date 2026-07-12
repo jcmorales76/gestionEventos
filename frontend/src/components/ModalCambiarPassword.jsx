@@ -19,7 +19,7 @@ export default function ModalCambiarPassword({ onClose }) {
     setSaving(true);
     try {
       const res = await fetch(
-        "http://localhost:5000/api/auth/change-password",
+        "/api/auth/change-password",
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },

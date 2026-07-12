@@ -23,7 +23,7 @@ export default function ModalResponderEncuesta({
     setCargando(true);
     try {
       const res = await fetch(
-        `http://localhost:5000/api/encuestas/evento/${eventoId}`,
+        `/api/encuestas/evento/${eventoId}`,
       );
       const data = await res.json();
       setTitulo(data.encuesta?.titulo || "Encuesta de satisfacción");
@@ -77,7 +77,7 @@ export default function ModalResponderEncuesta({
 
     setEnviando(true);
     try {
-      const res = await fetch("http://localhost:5000/api/encuestas/responder", {
+      const res = await fetch("/api/encuestas/responder", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

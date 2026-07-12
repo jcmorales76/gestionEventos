@@ -29,7 +29,7 @@ export default function MiPerfil() {
     fd.append("foto", file);
     try {
       const res = await fetch(
-        `http://localhost:5000/api/usuarios/${user.id}/foto`,
+        `/api/usuarios/${user.id}/foto`,
         { method: "POST", body: fd },
       );
       const data = await res.json();
@@ -53,7 +53,7 @@ export default function MiPerfil() {
     setSavingPerfil(true);
     try {
       const res = await fetch(
-        `http://localhost:5000/api/participantes/${user.id}`,
+        `/api/participantes/${user.id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -97,7 +97,7 @@ export default function MiPerfil() {
     setSavingPwd(true);
     try {
       const res = await fetch(
-        "http://localhost:5000/api/auth/change-password",
+        "/api/auth/change-password",
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -132,7 +132,7 @@ export default function MiPerfil() {
         <div className="flex items-center gap-4 mb-6">
           {user?.foto_url ? (
             <img
-              src={`http://localhost:5000${user.foto_url}`}
+              src={`${user.foto_url}`}
               alt="Foto de perfil"
               className="w-20 h-20 rounded-full object-cover ring-4 ring-primary-500/15"
             />

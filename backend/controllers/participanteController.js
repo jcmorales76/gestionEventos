@@ -1,4 +1,9 @@
 const pool = require("../config/db");
+const {
+  enviarBienvenida,
+  generarPasswordTemporal,
+  FORZAR_CAMBIO,
+} = require("../config/mailer");
 
 // Obtener participantes (con su último evento inscrito)
 exports.getParticipantes = async (req, res) => {
@@ -20,22 +25,40 @@ exports.getParticipantes = async (req, res) => {
 exports.createParticipante = async (req, res) => {
   try {
     const { nombre, apellido, email, password, dni, telefono, estado, evento } = req.body;
-    
+
+    // Contraseña temporal (DNI o una generada) + forzar cambio en el primer login
+    const tempPassword = password || dni || generarPasswordTemporal();
+
     const [userResult] = await pool.query(
-      'INSERT INTO usuarios (nombre, apellido, email, password, rol, dni, telefono, estado) VALUES (?, ?, ?, ?, "participante", ?, ?, ?)',
-      [nombre, apellido, email, password || "123456", dni, telefono, estado || "Activo"]
+      'INSERT INTO usuarios (nombre, apellido, email, password, rol, dni, telefono, estado, password_changed_at) VALUES (?, ?, ?, ?, "participante", ?, ?, ?, ?)',
+      [nombre, apellido, email, tempPassword, dni, telefono, estado || "Activo", FORZAR_CAMBIO]
     );
-    
+
     const userId = userResult.insertId;
-    
+
+    let eventoNombre = null;
     if (evento) {
-      const [eventoRows] = await pool.query("SELECT id FROM eventos WHERE nombre = ?", [evento]);
+      const [eventoRows] = await pool.query("SELECT id, nombre FROM eventos WHERE nombre = ?", [evento]);
       if (eventoRows.length > 0) {
         await pool.query("INSERT INTO inscripciones (usuario_id, evento_id) VALUES (?, ?)", [userId, eventoRows[0].id]);
+        eventoNombre = eventoRows[0].nombre;
       }
     }
-    
-    res.status(201).json({ id: userId, message: "Participante creado exitosamente" });
+
+    // Correo de bienvenida (no bloquea la creación si falla)
+    const correo = await enviarBienvenida({
+      email,
+      nombre: `${nombre} ${apellido}`,
+      tempPassword,
+      eventoNombre,
+    });
+
+    res.status(201).json({
+      id: userId,
+      message: "Participante creado exitosamente",
+      emailEnviado: correo.ok,
+      passwordTemporal: tempPassword,
+    });
   } catch (error) {
     console.error("Error al crear participante:", error);
     if (error.code === "ER_DUP_ENTRY") {

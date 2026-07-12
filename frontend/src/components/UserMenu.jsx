@@ -28,7 +28,7 @@ export default function UserMenu({ profilePath }) {
   const Avatar = ({ size = "w-9 h-9", text = "text-sm" }) =>
     user?.foto_url ? (
       <img
-        src={`http://localhost:5000${user.foto_url}`}
+        src={`${user.foto_url}`}
         alt="avatar"
         className={`${size} rounded-full object-cover ring-2 ring-primary-500/20`}
       />

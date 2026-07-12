@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -7,8 +7,19 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [logoUrl, setLogoUrl] = useState(null);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  // Cargar el isotipo del sistema
+  useEffect(() => {
+    fetch("/api/config/logo")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.logoUrl) setLogoUrl(`${data.logoUrl}`);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -39,15 +50,24 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-10">
       <div className="max-w-md w-full">
-        {/* Logo */}
+        {/* Logo / Isotipo */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 rounded-2xl bg-brand-gradient flex items-center justify-center mx-auto mb-4 shadow-glow">
-            <span className="text-white text-4xl font-bold font-heading">F</span>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2 font-heading text-gradient">
-            FEPCMAC
-          </h1>
-          <p className="text-gray-600">Gestión de Eventos</p>
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt="Logo"
+              className="h-32 w-auto object-contain mx-auto mb-4"
+            />
+          ) : (
+            <div className="w-20 h-20 rounded-2xl bg-brand-gradient flex items-center justify-center mx-auto mb-4 shadow-glow">
+              <span className="text-white text-4xl font-bold font-heading">
+                F
+              </span>
+            </div>
+          )}
+          <p className="text-gray-600 text-lg font-heading">
+            Gestión de Eventos
+          </p>
         </div>
 
         {/* Formulario */}
@@ -95,15 +115,6 @@ export default function Login() {
               {loading ? "Ingresando..." : "Ingresar"}
             </button>
           </form>
-
-          {/* Credenciales de prueba */}
-          <div className="mt-6 p-4 bg-secondary-50 rounded-xl border border-secondary-100">
-            <p className="text-xs text-gray-600 font-medium mb-2">
-              Credenciales de prueba:
-            </p>
-            <p className="text-xs text-gray-500">Email: admin@fepcmac.com</p>
-            <p className="text-xs text-gray-500">Contraseña: 123456</p>
-          </div>
           </div>
         </div>
       </div>

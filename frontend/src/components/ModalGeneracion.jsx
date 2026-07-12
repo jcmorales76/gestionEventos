@@ -14,7 +14,7 @@ export default function ModalGeneracion({ eventoId, onClose, onGenerado }) {
 
   const fetchInscripciones = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/inscripciones/evento/${eventoId}`)
+      const res = await fetch(`/api/inscripciones/evento/${eventoId}`)
       if (res.ok) {
         const data = await res.json()
         setParticipantes(data)
@@ -41,7 +41,7 @@ export default function ModalGeneracion({ eventoId, onClose, onGenerado }) {
 
   const descargarPDF = (url) => {
     // Abre el PDF en una nueva pestaña para descargar
-    window.open(`http://localhost:5000${url}`, '_blank')
+    window.open(`${url}`, '_blank')
   }
 
   const handleGenerar = async () => {
@@ -51,7 +51,7 @@ export default function ModalGeneracion({ eventoId, onClose, onGenerado }) {
       if (modo === 'masivo') {
         // Una sola petición: el backend genera todos los certificados del evento.
         setProgreso({ actual: 0, total: participantes.length })
-        const res = await fetch(`http://localhost:5000/api/plantillas/generar-masivo/${eventoId}`, {
+        const res = await fetch(`/api/plantillas/generar-masivo/${eventoId}`, {
           method: 'POST'
         })
         const data = await res.json()
@@ -79,7 +79,7 @@ export default function ModalGeneracion({ eventoId, onClose, onGenerado }) {
 
       for (let i = 0; i < seleccionados.length; i++) {
         const id = seleccionados[i]
-        const res = await fetch(`http://localhost:5000/api/plantillas/generar/${id}`, {
+        const res = await fetch(`/api/plantillas/generar/${id}`, {
           method: 'POST'
         })
         const data = await res.json()

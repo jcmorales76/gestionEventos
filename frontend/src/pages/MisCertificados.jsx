@@ -18,7 +18,7 @@ export default function MisCertificados() {
     setLoading(true);
     try {
       const res = await fetch(
-        `http://localhost:5000/api/certificados/mis/${user.id}`,
+        `/api/certificados/mis/${user.id}`,
       );
       if (res.ok) setItems(await res.json());
     } catch (error) {
@@ -28,7 +28,7 @@ export default function MisCertificados() {
     }
   };
 
-  const abrirPdf = (url) => window.open(`http://localhost:5000${url}`, "_blank");
+  const abrirPdf = (url) => window.open(`${url}`, "_blank");
 
   const handleDescargar = (item) => {
     abrirPdf(item.url_pdf);
@@ -39,7 +39,7 @@ export default function MisCertificados() {
     setGenerando(item.inscripcion_id);
     try {
       const res = await fetch(
-        `http://localhost:5000/api/certificados/participante/generar/${item.inscripcion_id}`,
+        `/api/certificados/participante/generar/${item.inscripcion_id}`,
         { method: "POST" },
       );
       const data = await res.json();

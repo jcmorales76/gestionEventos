@@ -6,11 +6,13 @@ const {
   updateConfiguracion,
   uploadLogo,
   getLogo,
+  testEmail,
 } = require("../controllers/configController");
 
 router.get("/", getConfiguracion);
-router.put("/:clave", updateConfiguracion);
+router.post("/test-email", testEmail);
 router.post("/logo", upload.single("logo"), uploadLogo);
 router.get("/logo", getLogo);
+router.put("/:clave", updateConfiguracion);
 
 module.exports = router;

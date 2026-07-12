@@ -43,7 +43,7 @@ export default function ModalNuevoParticipante({
 
   const fetchEventos = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/eventos");
+      const response = await fetch("/api/eventos");
       if (response.ok) {
         const data = await response.json();
         setEventos(data);

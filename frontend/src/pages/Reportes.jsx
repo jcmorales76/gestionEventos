@@ -25,7 +25,7 @@ export default function Reportes() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/stats/reportes")
+    fetch("/api/stats/reportes")
       .then((r) => r.json())
       .then(setData)
       .catch(() => {})

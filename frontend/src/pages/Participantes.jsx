@@ -23,7 +23,7 @@ export default function Participantes() {
   const fetchParticipantes = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:5000/api/participantes");
+      const response = await fetch("/api/participantes");
       if (!response.ok) throw new Error("Error al cargar participantes");
 
       const data = await response.json();
@@ -102,8 +102,8 @@ export default function Participantes() {
       };
 
       const url = esEdicion
-        ? `http://localhost:5000/api/participantes/${participanteEditando.id}`
-        : "http://localhost:5000/api/participantes";
+        ? `/api/participantes/${participanteEditando.id}`
+        : "/api/participantes";
 
       const response = await fetch(url, {
         method: esEdicion ? "PUT" : "POST",
@@ -134,7 +134,7 @@ export default function Participantes() {
     const id = participanteAEliminar.id;
     try {
       const response = await fetch(
-        `http://localhost:5000/api/participantes/${id}`,
+        `/api/participantes/${id}`,
         {
           method: "DELETE",
         },
@@ -198,18 +198,18 @@ export default function Participantes() {
             onChange={(e) => setFilterEvento(e.target.value)}
             className="input-field md:w-64"
           >
-            <option>Todos los eventos</option>
+            <option value="Todos">Todos los eventos</option>
             {/* Podrías cargar eventos dinámicamente aquí si quisieras */}
-            <option>Sin evento</option>
+            <option value="Sin evento">Sin evento</option>
           </select>
           <select
             value={filterEstado}
             onChange={(e) => setFilterEstado(e.target.value)}
             className="input-field md:w-48"
           >
-            <option>Todos los estados</option>
-            <option>Activo</option>
-            <option>Inactivo</option>
+            <option value="Todos">Todos los estados</option>
+            <option value="Activo">Activo</option>
+            <option value="Inactivo">Inactivo</option>
           </select>
         </div>
       </div>

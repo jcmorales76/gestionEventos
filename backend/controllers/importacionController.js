@@ -1,4 +1,9 @@
 const pool = require("../config/db");
+const {
+  enviarBienvenida,
+  generarPasswordTemporal,
+  FORZAR_CAMBIO,
+} = require("../config/mailer");
 
 // Importación masiva de participantes a un evento.
 // Por cada fila: crea el usuario si no existe (contraseña = DNI o "123456"),
@@ -29,12 +34,15 @@ exports.importarParticipantes = async (req, res) => {
         .json({ message: "El evento seleccionado no existe" });
     }
 
+    const eventoNombre = evRows[0].nombre;
+
     const resumen = {
       total: participantes.length,
       usuariosCreados: 0,
       usuariosExistentes: 0,
       inscripcionesNuevas: 0,
       yaInscritos: 0,
+      correosEnviados: 0,
       errores: [],
     };
 
@@ -60,15 +68,20 @@ exports.importarParticipantes = async (req, res) => {
         );
 
         let userId;
+        let esNuevo = false;
+        let tempPassword = null;
         if (userRows.length > 0) {
           userId = userRows[0].id;
           resumen.usuariosExistentes++;
         } else {
+          // Contraseña temporal + forzar cambio en el primer login
+          tempPassword = dni || generarPasswordTemporal();
           const [ins] = await pool.query(
-            'INSERT INTO usuarios (nombre, apellido, email, password, rol, dni, telefono, estado) VALUES (?, ?, ?, ?, "participante", ?, ?, "Activo")',
-            [nombre, apellido, email, dni || "123456", dni, telefono],
+            'INSERT INTO usuarios (nombre, apellido, email, password, rol, dni, telefono, estado, password_changed_at) VALUES (?, ?, ?, ?, "participante", ?, ?, "Activo", ?)',
+            [nombre, apellido, email, tempPassword, dni, telefono, FORZAR_CAMBIO],
           );
           userId = ins.insertId;
+          esNuevo = true;
           resumen.usuariosCreados++;
         }
 
@@ -78,6 +91,7 @@ exports.importarParticipantes = async (req, res) => {
           [userId, eventoId],
         );
 
+        let inscritoAhora = false;
         if (inscRows.length > 0) {
           resumen.yaInscritos++;
         } else {
@@ -86,6 +100,19 @@ exports.importarParticipantes = async (req, res) => {
             [userId, eventoId],
           );
           resumen.inscripcionesNuevas++;
+          inscritoAhora = true;
+        }
+
+        // 3. Correo: a los nuevos con sus credenciales; a los existentes
+        //    recién inscritos, solo el aviso de inscripción.
+        if (esNuevo || inscritoAhora) {
+          const correo = await enviarBienvenida({
+            email,
+            nombre: `${nombre} ${apellido}`.trim(),
+            tempPassword: esNuevo ? tempPassword : null,
+            eventoNombre,
+          });
+          if (correo.ok) resumen.correosEnviados++;
         }
       } catch (err) {
         console.error(`Error importando fila ${fila}:`, err.message);

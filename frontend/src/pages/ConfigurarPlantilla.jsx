@@ -36,7 +36,7 @@ export default function ConfigurarPlantilla() {
 
   const fetchPlantilla = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/plantillas/${eventoId}`)
+      const res = await fetch(`/api/plantillas/${eventoId}`)
       if (res.ok) {
         const data = await res.json()
         setPosiciones({
@@ -51,7 +51,7 @@ export default function ConfigurarPlantilla() {
           calidad: data.activo_calidad !== undefined ? data.activo_calidad : 1,
           fecha: data.activo_fecha !== undefined ? data.activo_fecha : 0
         })
-        setImagen(`http://localhost:5000${data.url_plantilla}`)
+        setImagen(`${data.url_plantilla}`)
         setEsPlantillaExistente(true)
         toast.success('📄 Plantilla existente cargada')
       } else {
@@ -105,7 +105,7 @@ export default function ConfigurarPlantilla() {
     Object.entries(camposActivos).forEach(([key, value]) => formData.append(`activo_${key}`, value))
 
     try {
-      const res = await fetch(`http://localhost:5000/api/plantillas/${eventoId}`, {
+      const res = await fetch(`/api/plantillas/${eventoId}`, {
         method: 'POST',
         body: formData
       })

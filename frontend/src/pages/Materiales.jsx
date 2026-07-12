@@ -33,7 +33,7 @@ export default function Materiales() {
 
   const fetchEventos = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/eventos");
+      const res = await fetch("/api/eventos");
       const data = await res.json();
       setEventos(data);
     } catch (error) {
@@ -46,7 +46,7 @@ export default function Materiales() {
     setLoading(true);
     try {
       const res = await fetch(
-        `http://localhost:5000/api/materiales/evento/${eventoSeleccionado}`,
+        `/api/materiales/evento/${eventoSeleccionado}`,
       );
       const data = await res.json();
       setMaterialesPorSesion(data);
@@ -61,7 +61,7 @@ export default function Materiales() {
     if (!eventoSeleccionado) return;
     try {
       const res = await fetch(
-        `http://localhost:5000/api/materiales/evento/${eventoSeleccionado}/sesiones`,
+        `/api/materiales/evento/${eventoSeleccionado}/sesiones`,
       );
       const data = await res.json();
       setSesiones(data);
@@ -80,7 +80,7 @@ export default function Materiales() {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/api/materiales/${materialAEliminar.id}`,
+        `/api/materiales/${materialAEliminar.id}`,
         {
           method: "DELETE",
         },
@@ -334,7 +334,7 @@ export default function Materiales() {
                         </div>
                         <div className="flex items-center gap-2 ml-4">
                           <a
-                            href={`http://localhost:5000${material.url_descarga}`}
+                            href={`${material.url_descarga}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"

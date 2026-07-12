@@ -17,7 +17,7 @@ export default function MisEncuestas() {
     setLoading(true);
     try {
       const res = await fetch(
-        `http://localhost:5000/api/encuestas/participante/${user.id}`,
+        `/api/encuestas/participante/${user.id}`,
       );
       if (res.ok) setEncuestas(await res.json());
     } catch (error) {

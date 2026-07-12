@@ -24,7 +24,7 @@ export default function Usuarios() {
   const fetchUsuarios = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:5000/api/usuarios");
+      const response = await fetch("/api/usuarios");
       if (!response.ok) throw new Error("Error al cargar usuarios");
 
       const data = await response.json();
@@ -52,8 +52,8 @@ export default function Usuarios() {
   const handleGuardarUsuario = async (data) => {
     try {
       const url = data.id
-        ? `http://localhost:5000/api/usuarios/${data.id}`
-        : "http://localhost:5000/api/usuarios";
+        ? `/api/usuarios/${data.id}`
+        : "/api/usuarios";
 
       const method = data.id ? "PUT" : "POST";
 
@@ -104,7 +104,7 @@ export default function Usuarios() {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/usuarios/${usuarioAEliminar.id}`,
+        `/api/usuarios/${usuarioAEliminar.id}`,
         {
           method: "DELETE",
         },
@@ -132,7 +132,7 @@ export default function Usuarios() {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/usuarios/${usuarioAReset.id}/reset-password`,
+        `/api/usuarios/${usuarioAReset.id}/reset-password`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },

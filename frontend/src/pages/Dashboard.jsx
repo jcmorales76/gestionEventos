@@ -31,7 +31,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/stats/dashboard")
+    fetch("/api/stats/dashboard")
       .then((r) => r.json())
       .then(setData)
       .catch(() => {})

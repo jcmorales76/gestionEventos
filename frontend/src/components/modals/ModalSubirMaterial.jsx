@@ -60,7 +60,7 @@ export default function ModalSubirMaterial({
     formData.append("descripcion", form.descripcion);
 
     try {
-      const res = await fetch("http://localhost:5000/api/materiales/upload", {
+      const res = await fetch("/api/materiales/upload", {
         method: "POST",
         body: formData,
       });

@@ -15,7 +15,7 @@ export default function MisMateriales() {
     setLoading(true);
     try {
       const res = await fetch(
-        `http://localhost:5000/api/participantes/${user.id}/materiales`,
+        `/api/participantes/${user.id}/materiales`,
       );
       if (res.ok) setMateriales(await res.json());
     } catch (error) {
@@ -57,7 +57,7 @@ export default function MisMateriales() {
       : "";
 
   const descargar = (mat) => {
-    window.open(`http://localhost:5000${mat.url_descarga}`, "_blank");
+    window.open(`${mat.url_descarga}`, "_blank");
     toast.success(`📥 Descargando ${mat.nombre_original}`);
   };
 
