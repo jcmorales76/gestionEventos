@@ -15,6 +15,7 @@ export default function ModalNuevoUsuario({
     rol: "admin",
     dni: "",
     telefono: "",
+    empresa: "",
     estado: "Activo",
   });
 
@@ -31,6 +32,7 @@ export default function ModalNuevoUsuario({
           rol: usuario.rol || "admin",
           dni: usuario.dni || "",
           telefono: usuario.telefono || "",
+          empresa: usuario.empresa || "",
           estado: usuario.estado || "Activo",
         });
       } else {
@@ -43,6 +45,7 @@ export default function ModalNuevoUsuario({
           rol: "admin",
           dni: "",
           telefono: "",
+          empresa: "",
           estado: "Activo",
         });
       }
@@ -159,6 +162,16 @@ export default function ModalNuevoUsuario({
               value={form.telefono}
               onChange={handleChange}
               className="input-field"
+            />
+          </div>
+          <div className="col-span-2">
+            <label className="label-input">Empresa</label>
+            <input
+              name="empresa"
+              value={form.empresa}
+              onChange={handleChange}
+              className="input-field"
+              placeholder="Nombre de la empresa"
             />
           </div>
           <div className="col-span-2">

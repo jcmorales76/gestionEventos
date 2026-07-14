@@ -4,6 +4,7 @@ const {
   generarPasswordTemporal,
   FORZAR_CAMBIO,
 } = require("../config/mailer");
+const { hashPassword } = require("../utils/security");
 
 // Importación masiva de participantes a un evento.
 // Por cada fila: crea el usuario si no existe (contraseña = DNI o "123456"),
@@ -76,9 +77,10 @@ exports.importarParticipantes = async (req, res) => {
         } else {
           // Contraseña temporal + forzar cambio en el primer login
           tempPassword = dni || generarPasswordTemporal();
+          const hash = await hashPassword(tempPassword);
           const [ins] = await pool.query(
             'INSERT INTO usuarios (nombre, apellido, email, password, rol, dni, telefono, estado, password_changed_at) VALUES (?, ?, ?, ?, "participante", ?, ?, "Activo", ?)',
-            [nombre, apellido, email, tempPassword, dni, telefono, FORZAR_CAMBIO],
+            [nombre, apellido, email, hash, dni, telefono, FORZAR_CAMBIO],
           );
           userId = ins.insertId;
           esNuevo = true;

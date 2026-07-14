@@ -2,6 +2,7 @@ const pool = require("../config/db");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const { hashPassword } = require("../utils/security");
 
 // ===== Subida de foto de perfil (avatar) =====
 const avatarStorage = multer.diskStorage({
@@ -46,7 +47,7 @@ exports.uploadFoto = async (req, res) => {
 exports.getUsuarios = async (req, res) => {
   try {
     const [usuarios] = await pool.query(
-      "SELECT * FROM usuarios ORDER BY fecha_creacion DESC",
+      "SELECT id, nombre, apellido, email, rol, dni, telefono, estado, empresa, foto_url, password_changed_at, fecha_creacion FROM usuarios ORDER BY fecha_creacion DESC",
     );
     res.json(usuarios);
   } catch (error) {
@@ -58,20 +59,22 @@ exports.getUsuarios = async (req, res) => {
 // Crear nuevo usuario
 exports.createUsuario = async (req, res) => {
   try {
-    const { nombre, apellido, email, password, rol, dni, telefono, estado } =
+    const { nombre, apellido, email, password, rol, dni, telefono, estado, empresa } =
       req.body;
 
+    const hash = await hashPassword(password || "123456");
     const [result] = await pool.query(
-      "INSERT INTO usuarios (nombre, apellido, email, password, rol, dni, telefono, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO usuarios (nombre, apellido, email, password, rol, dni, telefono, estado, empresa) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [
         nombre,
         apellido,
         email,
-        password || "123456",
+        hash,
         rol || "admin",
         dni,
         telefono,
         estado || "Activo",
+        empresa || null,
       ],
     );
 
@@ -93,11 +96,12 @@ exports.createUsuario = async (req, res) => {
 exports.updateUsuario = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre, apellido, email, rol, dni, telefono, estado } = req.body;
+    const { nombre, apellido, email, rol, dni, telefono, estado, empresa } =
+      req.body;
 
     await pool.query(
-      "UPDATE usuarios SET nombre=?, apellido=?, email=?, rol=?, dni=?, telefono=?, estado=? WHERE id=?",
-      [nombre, apellido, email, rol, dni, telefono, estado, id],
+      "UPDATE usuarios SET nombre=?, apellido=?, email=?, rol=?, dni=?, telefono=?, estado=?, empresa=? WHERE id=?",
+      [nombre, apellido, email, rol, dni, telefono, estado, empresa || null, id],
     );
 
     res.json({ message: "Usuario actualizado exitosamente" });
@@ -130,9 +134,10 @@ exports.resetPassword = async (req, res) => {
     const { id } = req.params;
     const { newPassword } = req.body;
 
+    const hash = await hashPassword(newPassword || "123456");
     await pool.query(
       "UPDATE usuarios SET password = ?, password_changed_at = NOW() WHERE id = ?",
-      [newPassword || "123456", id],
+      [hash, id],
     );
 
     res.json({ message: "Contraseña reseteada exitosamente" });

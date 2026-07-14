@@ -1,4 +1,32 @@
 const pool = require("../config/db");
+const { enviarCorreo, estaConfigurado } = require("../config/mailer");
+
+// Enviar un correo de prueba para verificar la configuración SMTP
+exports.testEmail = async (req, res) => {
+  try {
+    const { to } = req.body;
+    if (!to) {
+      return res.status(400).json({ message: "Indica el correo destino (to)" });
+    }
+    if (!estaConfigurado()) {
+      return res.status(400).json({
+        message:
+          "SMTP no configurado (faltan variables SMTP_HOST / SMTP_USER / SMTP_PASS)",
+      });
+    }
+    const r = await enviarCorreo({
+      to,
+      subject: "Correo de prueba · FEPCMAC",
+      html: "<p>✅ Este es un correo de prueba. La configuración SMTP funciona correctamente.</p>",
+    });
+    if (r.ok) return res.json({ message: "Correo de prueba enviado a " + to });
+    return res
+      .status(500)
+      .json({ message: "No se pudo enviar: " + (r.error || "error") });
+  } catch (e) {
+    res.status(500).json({ message: "Error: " + e.message });
+  }
+};
 
 // Obtener todas las configuraciones
 exports.getConfiguracion = async (req, res) => {

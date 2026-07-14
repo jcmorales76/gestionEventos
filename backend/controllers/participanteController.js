@@ -4,6 +4,7 @@ const {
   generarPasswordTemporal,
   FORZAR_CAMBIO,
 } = require("../config/mailer");
+const { hashPassword } = require("../utils/security");
 
 // Obtener participantes (con su último evento inscrito)
 exports.getParticipantes = async (req, res) => {
@@ -24,14 +25,15 @@ exports.getParticipantes = async (req, res) => {
 // Crear nuevo participante
 exports.createParticipante = async (req, res) => {
   try {
-    const { nombre, apellido, email, password, dni, telefono, estado, evento } = req.body;
+    const { nombre, apellido, email, password, dni, telefono, estado, evento, empresa } = req.body;
 
     // Contraseña temporal (DNI o una generada) + forzar cambio en el primer login
     const tempPassword = password || dni || generarPasswordTemporal();
+    const hash = await hashPassword(tempPassword);
 
     const [userResult] = await pool.query(
-      'INSERT INTO usuarios (nombre, apellido, email, password, rol, dni, telefono, estado, password_changed_at) VALUES (?, ?, ?, ?, "participante", ?, ?, ?, ?)',
-      [nombre, apellido, email, tempPassword, dni, telefono, estado || "Activo", FORZAR_CAMBIO]
+      'INSERT INTO usuarios (nombre, apellido, email, password, rol, dni, telefono, estado, empresa, password_changed_at) VALUES (?, ?, ?, ?, "participante", ?, ?, ?, ?, ?)',
+      [nombre, apellido, email, hash, dni, telefono, estado || "Activo", empresa || null, FORZAR_CAMBIO]
     );
 
     const userId = userResult.insertId;
@@ -72,11 +74,11 @@ exports.createParticipante = async (req, res) => {
 exports.updateParticipante = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre, apellido, email, dni, telefono, estado } = req.body;
+    const { nombre, apellido, email, dni, telefono, estado, empresa } = req.body;
 
     await pool.query(
-      "UPDATE usuarios SET nombre=?, apellido=?, email=?, dni=?, telefono=?, estado=? WHERE id=?",
-      [nombre, apellido, email, dni, telefono, estado || "Activo", id]
+      "UPDATE usuarios SET nombre=?, apellido=?, email=?, dni=?, telefono=?, estado=?, empresa=? WHERE id=?",
+      [nombre, apellido, email, dni, telefono, estado || "Activo", empresa || null, id]
     );
 
     res.json({ message: "Participante actualizado exitosamente" });

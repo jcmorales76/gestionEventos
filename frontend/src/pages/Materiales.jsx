@@ -3,6 +3,7 @@ import { toast } from "react-hot-toast";
 import ModalSubirMaterial from "../components/modals/ModalSubirMaterial";
 import ModalNuevaSesion from "../components/modals/ModalNuevaSesion";
 import ModalConfirmacionPersonalizada from "../components/ModalConfirmacionPersonalizada";
+import Modal from "../components/Modal";
 
 export default function Materiales() {
   const [eventos, setEventos] = useState([]);
@@ -19,6 +20,41 @@ export default function Materiales() {
   const [modalEliminarOpen, setModalEliminarOpen] = useState(false);
   const [materialAEliminar, setMaterialAEliminar] = useState(null);
   const [sesionPreseleccionada, setSesionPreseleccionada] = useState("");
+
+  // Renombrar sesión
+  const [sesionARenombrar, setSesionARenombrar] = useState(null);
+  const [nuevoNombreSesion, setNuevoNombreSesion] = useState("");
+
+  const abrirRenombrar = (sesion) => {
+    setSesionARenombrar(sesion);
+    setNuevoNombreSesion(sesion);
+  };
+
+  const handleRenombrarSesion = async () => {
+    if (!nuevoNombreSesion.trim()) return toast.error("Escribe un nombre");
+    try {
+      const res = await fetch("/api/materiales/renombrar-sesion", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventoId: eventoSeleccionado,
+          sesionActual: sesionARenombrar,
+          sesionNueva: nuevoNombreSesion.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("✅ Sesión renombrada");
+        setSesionARenombrar(null);
+        fetchMateriales();
+        fetchSesiones();
+      } else {
+        toast.error(data.message || "Error al renombrar");
+      }
+    } catch (error) {
+      toast.error("Error de conexión");
+    }
+  };
 
   useEffect(() => {
     fetchEventos();
@@ -273,6 +309,16 @@ export default function Materiales() {
                   <div className="flex items-center gap-3">
                     <button
                       onClick={(e) => {
+                        e.stopPropagation();
+                        abrirRenombrar(sesion);
+                      }}
+                      className="p-2 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                      title="Renombrar carpeta"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={(e) => {
                         e.stopPropagation(); // Evitar que se cierre la persiana al subir archivo
                         handleSubirMaterial(sesion);
                       }}
@@ -400,6 +446,36 @@ export default function Materiales() {
         eventoId={eventoSeleccionado}
         onCrear={handleSesionCreada}
       />
+
+      {/* Renombrar sesión */}
+      <Modal
+        isOpen={Boolean(sesionARenombrar)}
+        onClose={() => setSesionARenombrar(null)}
+        title="Renombrar carpeta"
+        size="sm"
+        footer={
+          <>
+            <button
+              onClick={() => setSesionARenombrar(null)}
+              className="btn-secondary"
+            >
+              Cancelar
+            </button>
+            <button onClick={handleRenombrarSesion} className="btn-primary">
+              Guardar
+            </button>
+          </>
+        }
+      >
+        <label className="label-input">Nuevo nombre de la carpeta</label>
+        <input
+          value={nuevoNombreSesion}
+          onChange={(e) => setNuevoNombreSesion(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleRenombrarSesion()}
+          className="input-field"
+          autoFocus
+        />
+      </Modal>
 
       <ModalConfirmacionPersonalizada
         isOpen={modalEliminarOpen}

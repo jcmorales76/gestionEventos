@@ -2,6 +2,17 @@ import { useState, useEffect } from "react";
 import Modal from "../Modal";
 
 export default function ModalEditarEvento({ isOpen, onClose, evento, onSave }) {
+  const [tipos, setTipos] = useState([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetch("/api/tipos-evento")
+        .then((r) => r.json())
+        .then((data) => setTipos(Array.isArray(data) ? data : []))
+        .catch(() => {});
+    }
+  }, [isOpen]);
+
   const [form, setForm] = useState({
     nombre: "",
     tipo: "Curso",
@@ -102,13 +113,17 @@ export default function ModalEditarEvento({ isOpen, onClose, evento, onSave }) {
               value={form.tipo}
               onChange={handleChange}
               className="input-field"
+              required
             >
-              <option>Curso</option>
-              <option>Seminario</option>
-              <option>Taller</option>
-              <option>Congreso</option>
-              <option>Programa de Alta Dirección</option>
-              <option>Conferencia</option>
+              {/* Asegura que el tipo actual aparezca aunque no esté en la lista */}
+              {form.tipo && !tipos.some((t) => t.nombre === form.tipo) && (
+                <option value={form.tipo}>{form.tipo}</option>
+              )}
+              {tipos.map((t) => (
+                <option key={t.id} value={t.nombre}>
+                  {t.nombre}
+                </option>
+              ))}
             </select>
           </div>
           <div>

@@ -191,6 +191,24 @@ const getSesionesByEvento = async (req, res) => {
   }
 };
 
+// ✅ Renombrar una sesión (carpeta) de un evento
+const renombrarSesion = async (req, res) => {
+  try {
+    const { eventoId, sesionActual, sesionNueva } = req.body;
+    if (!eventoId || !sesionActual || !sesionNueva || !sesionNueva.trim()) {
+      return res.status(400).json({ message: "Faltan datos" });
+    }
+    await pool.query(
+      "UPDATE materiales SET sesion = ? WHERE evento_id = ? AND sesion = ?",
+      [sesionNueva.trim(), eventoId, sesionActual],
+    );
+    res.json({ message: "Sesión renombrada exitosamente" });
+  } catch (error) {
+    console.error("Error al renombrar sesión:", error);
+    res.status(500).json({ message: "Error al renombrar la sesión" });
+  }
+};
+
 // ✅ EXPORTAR TODAS LAS FUNCIONES
 module.exports = {
   upload,
@@ -199,4 +217,5 @@ module.exports = {
   deleteMaterial,
   crearSesion,
   getSesionesByEvento,
+  renombrarSesion,
 };

@@ -2,6 +2,13 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
+const path = require("path");
+
+const { auth, requireRole } = require("./middleware/auth");
+const authController = require("./controllers/authController");
+const configController = require("./controllers/configController");
+const { migrarPasswordsPlanas } = require("./utils/migratePasswords");
+
 const authRoutes = require("./routes/authRoutes");
 const eventoRoutes = require("./routes/eventoRoutes");
 const participanteRoutes = require("./routes/participanteRoutes");
@@ -14,7 +21,6 @@ const plantillaRoutes = require("./routes/plantillaRoutes");
 const importacionRoutes = require("./routes/importacionRoutes");
 const encuestaRoutes = require("./routes/encuestaRoutes");
 const statsRoutes = require("./routes/statsRoutes");
-const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -23,38 +29,36 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Rutas
-app.use("/api/auth", authRoutes);
+// Archivos subidos (públicos: logos, materiales, certificados, avatars)
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// ===== Rutas PÚBLICAS (sin token) =====
+app.get("/api/health", (req, res) =>
+  res.json({ ok: true, message: "API de EventFlow funcionando 🚀" }),
+);
+app.post("/api/auth/login", authController.login);
+app.get("/api/config/logo", configController.getLogo); // logo para el login
+app.get("/api/config", configController.getConfiguracion); // nombre/logo del sistema
+
+// ===== A partir de aquí, TODO /api requiere token válido =====
+app.use("/api", auth);
+
+// ===== Rutas PROTEGIDAS =====
+app.use("/api/auth", authRoutes); // change-password (login ya resuelto arriba)
 app.use("/api/eventos", eventoRoutes);
 app.use("/api/participantes", participanteRoutes);
-app.use("/api/config", configRoutes);
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-app.use("/api/usuarios", usuarioRoutes);
 app.use("/api/materiales", materialRoutes);
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/certificados", certificadoRoutes);
 app.use("/api/inscripciones", inscripcionRoutes);
-app.use("/uploads", express.static("uploads"));
-app.use(
-  "/uploads/certificados",
-  express.static(path.join(__dirname, "uploads/certificados")),
-);
 app.use("/api/plantillas", plantillaRoutes);
-app.use("/api/importacion", importacionRoutes);
 app.use("/api/encuestas", encuestaRoutes);
-app.use("/api/stats", statsRoutes);
-app.use(
-  "/uploads/plantillas",
-  express.static(path.join(__dirname, "uploads/plantillas")),
-);
+// Solo administradores:
+app.use("/api/config", requireRole("admin"), configRoutes);
+app.use("/api/usuarios", requireRole("admin"), usuarioRoutes);
+app.use("/api/importacion", requireRole("admin"), importacionRoutes);
+app.use("/api/stats", requireRole("admin"), statsRoutes);
 
-// Health check de la API
-app.get("/api/health", (req, res) => {
-  res.json({ ok: true, message: "API de EventFlow funcionando 🚀" });
-});
-
-// Servir el frontend (build de React) si existe la carpeta ./public.
-// En producción (cPanel) se copia el contenido de frontend/dist aquí.
+// ===== Frontend (build de React) si existe ./public =====
 const frontendDir = path.join(__dirname, "public");
 if (fs.existsSync(frontendDir)) {
   app.use(express.static(frontendDir));
@@ -74,4 +78,6 @@ app.use((req, res) => {
 
 app.listen(PORT, () => {
   console.log(`✅ Servidor corriendo en el puerto ${PORT}`);
+  // Cifra las contraseñas que aún estén en texto plano (una sola vez)
+  migrarPasswordsPlanas();
 });

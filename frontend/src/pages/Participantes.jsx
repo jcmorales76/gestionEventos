@@ -36,6 +36,7 @@ export default function Participantes() {
         email: p.email,
         dni: p.dni,
         telefono: p.telefono,
+        empresa: p.empresa || "",
         evento: p.evento || "Sin evento",
         fechaInscripcion: new Date(p.fecha_creacion).toLocaleDateString(
           "es-ES",
@@ -97,6 +98,7 @@ export default function Participantes() {
         email: data.email,
         dni: data.dni,
         telefono: data.telefono,
+        empresa: data.empresa,
         estado: data.estado,
         evento: data.evento, // El nombre del evento seleccionado (solo al crear)
       };

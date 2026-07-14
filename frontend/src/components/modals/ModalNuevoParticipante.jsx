@@ -7,6 +7,7 @@ const FORM_VACIO = {
   email: "",
   dni: "",
   telefono: "",
+  empresa: "",
   evento: "",
   estado: "Activo",
 };
@@ -32,6 +33,7 @@ export default function ModalNuevoParticipante({
           email: participante.email || "",
           dni: participante.dni || "",
           telefono: participante.telefono || "",
+          empresa: participante.empresa || "",
           evento: participante.evento || "",
           estado: participante.estado || "Activo",
         });
@@ -127,6 +129,16 @@ export default function ModalNuevoParticipante({
               value={form.telefono}
               onChange={handleChange}
               className="input-field"
+            />
+          </div>
+          <div className="col-span-2">
+            <label className="label-input">Empresa</label>
+            <input
+              name="empresa"
+              value={form.empresa}
+              onChange={handleChange}
+              className="input-field"
+              placeholder="Nombre de la empresa"
             />
           </div>
           {!esEdicion && (

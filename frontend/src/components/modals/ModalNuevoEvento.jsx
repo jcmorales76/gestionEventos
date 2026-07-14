@@ -1,7 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Modal from "../Modal";
 
 export default function ModalNuevoEvento({ isOpen, onClose, onSave }) {
+  const [tipos, setTipos] = useState([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetch("/api/tipos-evento")
+        .then((r) => r.json())
+        .then((data) => setTipos(Array.isArray(data) ? data : []))
+        .catch(() => {});
+    }
+  }, [isOpen]);
+
   const [form, setForm] = useState({
     nombre: "",
     tipo: "Curso",
@@ -63,13 +74,13 @@ export default function ModalNuevoEvento({ isOpen, onClose, onSave }) {
               value={form.tipo}
               onChange={handleChange}
               className="input-field"
+              required
             >
-              <option>Curso</option>
-              <option>Seminario</option>
-              <option>Taller</option>
-              <option>Congreso</option>
-              <option>Programa de Alta Dirección</option>
-              <option>Conferencia</option>
+              {tipos.map((t) => (
+                <option key={t.id} value={t.nombre}>
+                  {t.nombre}
+                </option>
+              ))}
             </select>
           </div>
           <div>

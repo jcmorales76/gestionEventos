@@ -1,8 +1,7 @@
 const pool = require("../config/db");
 const jwt = require("jsonwebtoken");
-
-// Configuración de seguridad (puedes cambiar 30, 45 o 60)
-const PASSWORD_EXPIRY_DAYS = 60;
+const { hashPassword, verifyPassword, esHash } = require("../utils/security");
+const { SECRET } = require("../middleware/auth");
 
 exports.login = async (req, res) => {
   try {
@@ -10,7 +9,7 @@ exports.login = async (req, res) => {
     if (!email || !password)
       return res.status(400).json({ message: "Credenciales requeridas" });
 
-    // 1. Obtener días de expiración desde la BD
+    // 1. Días de expiración desde la BD
     const [configRows] = await pool.query(
       "SELECT valor FROM configuraciones WHERE clave = 'password_expiry_days'",
     );
@@ -26,11 +25,26 @@ exports.login = async (req, res) => {
 
     const user = rows[0];
 
-    if (password !== user.password) {
+    // 3. Verificar contraseña (soporta hash bcrypt y texto plano legado)
+    const ok = await verifyPassword(password, user.password);
+    if (!ok) {
       return res.status(401).json({ message: "Credenciales incorrectas" });
     }
 
-    // 3. Verificar expiración usando el valor dinámico
+    // 3b. Migración perezosa: si estaba en texto plano, la ciframos ahora
+    if (!esHash(user.password)) {
+      try {
+        const hash = await hashPassword(password);
+        await pool.query("UPDATE usuarios SET password = ? WHERE id = ?", [
+          hash,
+          user.id,
+        ]);
+      } catch (e) {
+        console.error("No se pudo migrar la contraseña a hash:", e.message);
+      }
+    }
+
+    // 4. Expiración de contraseña
     const lastChanged = new Date(
       user.password_changed_at || user.fecha_creacion,
     ).getTime();
@@ -39,7 +53,7 @@ exports.login = async (req, res) => {
 
     const token = jwt.sign(
       { id: user.id, email: user.email, rol: user.rol },
-      "tu_secreto_super_seguro_123",
+      SECRET,
       { expiresIn: "24h" },
     );
     const { password: _, ...userSafe } = user;
@@ -55,7 +69,7 @@ exports.login = async (req, res) => {
   }
 };
 
-// Endpoint para cambiar contraseña
+// Cambiar contraseña
 exports.changePassword = async (req, res) => {
   try {
     const { userId, currentPassword, newPassword } = req.body;
@@ -63,16 +77,23 @@ exports.changePassword = async (req, res) => {
       userId,
     ]);
 
-    if (rows.length === 0 || rows[0].password !== currentPassword) {
+    if (rows.length === 0) {
+      return res.status(400).json({ message: "Usuario no encontrado" });
+    }
+
+    const ok = await verifyPassword(currentPassword, rows[0].password);
+    if (!ok) {
       return res.status(400).json({ message: "Contraseña actual incorrecta" });
     }
 
+    const hash = await hashPassword(newPassword);
     await pool.query(
       "UPDATE usuarios SET password = ?, password_changed_at = NOW() WHERE id = ?",
-      [newPassword, userId],
+      [hash, userId],
     );
     res.json({ message: "Contraseña actualizada exitosamente" });
   } catch (error) {
+    console.error("Error al cambiar contraseña:", error);
     res.status(500).json({ message: "Error al cambiar contraseña" });
   }
 };

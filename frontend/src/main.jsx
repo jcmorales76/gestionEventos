@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import "./api"; // interceptor de fetch (token JWT + manejo de 401)
 import App from "./App.jsx";
 import "./index.css";
 import { AuthProvider } from "./contexts/AuthContext";

@@ -18,6 +18,77 @@ export default function Configuracion() {
   const [testEmailTo, setTestEmailTo] = useState("");
   const [enviandoTest, setEnviandoTest] = useState(false);
 
+  // Tipos de evento
+  const [tiposEvento, setTiposEvento] = useState([]);
+  const [nuevoTipo, setNuevoTipo] = useState("");
+  const [editTipoId, setEditTipoId] = useState(null);
+  const [editTipoNombre, setEditTipoNombre] = useState("");
+
+  const fetchTiposEvento = async () => {
+    try {
+      const res = await fetch("/api/tipos-evento");
+      if (res.ok) setTiposEvento(await res.json());
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const agregarTipo = async () => {
+    if (!nuevoTipo.trim()) return toast.error("Escribe un nombre");
+    try {
+      const res = await fetch("/api/tipos-evento", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: nuevoTipo.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setNuevoTipo("");
+        toast.success("✅ Tipo agregado");
+        fetchTiposEvento();
+      } else {
+        toast.error(data.message || "Error al agregar");
+      }
+    } catch (error) {
+      toast.error("Error de conexión");
+    }
+  };
+
+  const guardarEdicionTipo = async (id) => {
+    if (!editTipoNombre.trim()) return toast.error("El nombre no puede estar vacío");
+    try {
+      const res = await fetch(`/api/tipos-evento/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: editTipoNombre.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setEditTipoId(null);
+        toast.success("✅ Tipo actualizado");
+        fetchTiposEvento();
+      } else {
+        toast.error(data.message || "Error al actualizar");
+      }
+    } catch (error) {
+      toast.error("Error de conexión");
+    }
+  };
+
+  const eliminarTipo = async (id) => {
+    try {
+      const res = await fetch(`/api/tipos-evento/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Tipo eliminado");
+        fetchTiposEvento();
+      } else {
+        toast.error("Error al eliminar");
+      }
+    } catch (error) {
+      toast.error("Error de conexión");
+    }
+  };
+
   const handleTestEmail = async () => {
     if (!testEmailTo) {
       toast.error("Escribe un correo destino");
@@ -46,6 +117,7 @@ export default function Configuracion() {
   useEffect(() => {
     fetchConfig();
     fetchLogo();
+    fetchTiposEvento();
   }, []);
 
   // Sincronizar nombre del sistema cuando se carga config
@@ -391,6 +463,92 @@ export default function Configuracion() {
           >
             {enviandoTest ? "Enviando..." : "Enviar prueba"}
           </button>
+        </div>
+      </div>
+
+      {/* Tipos de Evento */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 className="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+          🏷️ Tipos de Evento
+        </h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Administra los tipos disponibles al crear o editar eventos (seminario,
+          taller, charla, congreso…).
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-2 mb-4">
+          <input
+            value={nuevoTipo}
+            onChange={(e) => setNuevoTipo(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && agregarTipo()}
+            placeholder="Nuevo tipo (ej. Conferencia)"
+            className="input-field sm:w-72"
+          />
+          <button onClick={agregarTipo} className="btn-primary">
+            + Agregar
+          </button>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {tiposEvento.length === 0 && (
+            <p className="text-sm text-gray-400">No hay tipos aún.</p>
+          )}
+          {tiposEvento.map((t) =>
+            editTipoId === t.id ? (
+              <div
+                key={t.id}
+                className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1"
+              >
+                <input
+                  value={editTipoNombre}
+                  onChange={(e) => setEditTipoNombre(e.target.value)}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" && guardarEdicionTipo(t.id)
+                  }
+                  className="input-field w-40"
+                  autoFocus
+                />
+                <button
+                  onClick={() => guardarEdicionTipo(t.id)}
+                  className="text-green-600 hover:text-green-700 px-1"
+                  title="Guardar"
+                >
+                  ✓
+                </button>
+                <button
+                  onClick={() => setEditTipoId(null)}
+                  className="text-gray-400 hover:text-gray-600 px-1"
+                  title="Cancelar"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <div
+                key={t.id}
+                className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-1.5"
+              >
+                <span className="text-sm text-gray-700">{t.nombre}</span>
+                <button
+                  onClick={() => {
+                    setEditTipoId(t.id);
+                    setEditTipoNombre(t.nombre);
+                  }}
+                  className="text-purple-500 hover:text-purple-700 text-xs"
+                  title="Editar"
+                >
+                  ✏️
+                </button>
+                <button
+                  onClick={() => eliminarTipo(t.id)}
+                  className="text-red-500 hover:text-red-700 text-xs"
+                  title="Eliminar"
+                >
+                  🗑️
+                </button>
+              </div>
+            ),
+          )}
         </div>
       </div>
     </div>

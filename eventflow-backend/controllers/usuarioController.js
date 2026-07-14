@@ -2,6 +2,7 @@ const pool = require("../config/db");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const { hashPassword } = require("../utils/security");
 
 // ===== Subida de foto de perfil (avatar) =====
 const avatarStorage = multer.diskStorage({
@@ -46,7 +47,7 @@ exports.uploadFoto = async (req, res) => {
 exports.getUsuarios = async (req, res) => {
   try {
     const [usuarios] = await pool.query(
-      "SELECT * FROM usuarios ORDER BY fecha_creacion DESC",
+      "SELECT id, nombre, apellido, email, rol, dni, telefono, estado, foto_url, password_changed_at, fecha_creacion FROM usuarios ORDER BY fecha_creacion DESC",
     );
     res.json(usuarios);
   } catch (error) {
@@ -61,13 +62,14 @@ exports.createUsuario = async (req, res) => {
     const { nombre, apellido, email, password, rol, dni, telefono, estado } =
       req.body;
 
+    const hash = await hashPassword(password || "123456");
     const [result] = await pool.query(
       "INSERT INTO usuarios (nombre, apellido, email, password, rol, dni, telefono, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       [
         nombre,
         apellido,
         email,
-        password || "123456",
+        hash,
         rol || "admin",
         dni,
         telefono,
@@ -130,9 +132,10 @@ exports.resetPassword = async (req, res) => {
     const { id } = req.params;
     const { newPassword } = req.body;
 
+    const hash = await hashPassword(newPassword || "123456");
     await pool.query(
       "UPDATE usuarios SET password = ?, password_changed_at = NOW() WHERE id = ?",
-      [newPassword || "123456", id],
+      [hash, id],
     );
 
     res.json({ message: "Contraseña reseteada exitosamente" });

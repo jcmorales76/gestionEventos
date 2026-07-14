@@ -64,6 +64,7 @@ export default function Usuarios() {
         rol: data.rol,
         dni: data.dni,
         telefono: data.telefono,
+        empresa: data.empresa,
         estado: data.estado,
       };
 
