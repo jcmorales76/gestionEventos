@@ -128,6 +128,25 @@ export default function Usuarios() {
     setModalResetOpen(true);
   };
 
+  const estaBloqueado = (u) =>
+    u.bloqueado_hasta && new Date(u.bloqueado_hasta) > new Date();
+
+  const handleDesbloquear = async (u) => {
+    try {
+      const res = await fetch(`/api/usuarios/${u.id}/desbloquear`, {
+        method: "PUT",
+      });
+      if (res.ok) {
+        toast.success("🔓 Cuenta desbloqueada");
+        fetchUsuarios();
+      } else {
+        toast.error("No se pudo desbloquear");
+      }
+    } catch (error) {
+      toast.error("Error de conexión");
+    }
+  };
+
   const handleConfirmarReset = async () => {
     if (!usuarioAReset) return;
 
@@ -284,15 +303,22 @@ export default function Usuarios() {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        u.estado === "Activo"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      {u.estado}
-                    </span>
+                    <div className="flex flex-col items-start gap-1">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          u.estado === "Activo"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        {u.estado}
+                      </span>
+                      {estaBloqueado(u) && (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                          🔒 Bloqueado
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
                     {new Date(u.fecha_creacion).toLocaleDateString("es-ES")}
@@ -316,6 +342,15 @@ export default function Usuarios() {
                       >
                         🔑
                       </button>
+                      {estaBloqueado(u) && (
+                        <button
+                          onClick={() => handleDesbloquear(u)}
+                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                          title="Desbloquear cuenta"
+                        >
+                          🔓
+                        </button>
+                      )}
                       <button
                         onClick={() => handleEliminarClick(u)}
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"

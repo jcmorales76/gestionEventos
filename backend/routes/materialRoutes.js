@@ -9,6 +9,7 @@ const {
   crearSesion,
   getSesionesByEvento,
   renombrarSesion,
+  eliminarSesion,
 } = require("../controllers/materialController");
 
 router.get("/evento/:eventoId", getMaterialesByEvento);
@@ -16,6 +17,7 @@ router.get("/evento/:eventoId/sesiones", getSesionesByEvento);
 router.post("/upload", upload.single("archivo"), uploadMaterial);
 router.post("/crear-sesion", crearSesion);
 router.put("/renombrar-sesion", requireRole("admin"), renombrarSesion);
+router.delete("/eliminar-sesion", requireRole("admin"), eliminarSesion);
 router.delete("/:id", deleteMaterial);
 
 module.exports = router;

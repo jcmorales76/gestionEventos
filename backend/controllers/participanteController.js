@@ -27,6 +27,12 @@ exports.createParticipante = async (req, res) => {
   try {
     const { nombre, apellido, email, password, dni, telefono, estado, evento, empresa } = req.body;
 
+    if (!nombre || !apellido || !email || !dni || !telefono) {
+      return res.status(400).json({
+        message: "Faltan campos obligatorios (nombre, apellido, correo, DNI y teléfono)",
+      });
+    }
+
     // Contraseña temporal (DNI o una generada) + forzar cambio en el primer login
     const tempPassword = password || dni || generarPasswordTemporal();
     const hash = await hashPassword(tempPassword);
@@ -75,6 +81,12 @@ exports.updateParticipante = async (req, res) => {
   try {
     const { id } = req.params;
     const { nombre, apellido, email, dni, telefono, estado, empresa } = req.body;
+
+    if (!nombre || !apellido || !email) {
+      return res.status(400).json({
+        message: "Nombre, apellido y correo son obligatorios",
+      });
+    }
 
     await pool.query(
       "UPDATE usuarios SET nombre=?, apellido=?, email=?, dni=?, telefono=?, estado=?, empresa=? WHERE id=?",

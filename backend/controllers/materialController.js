@@ -209,6 +209,40 @@ const renombrarSesion = async (req, res) => {
   }
 };
 
+// ✅ Eliminar una sesión (carpeta) completa: sus archivos físicos y registros
+const eliminarSesion = async (req, res) => {
+  try {
+    const { eventoId, sesion } = req.body;
+    if (!eventoId || !sesion) {
+      return res.status(400).json({ message: "Faltan datos" });
+    }
+    const [mats] = await pool.query(
+      "SELECT * FROM materiales WHERE evento_id = ? AND sesion = ?",
+      [eventoId, sesion],
+    );
+    for (const m of mats) {
+      if (m.url_descarga) {
+        const filePath = path.join(__dirname, "..", m.url_descarga);
+        if (fs.existsSync(filePath)) {
+          try {
+            fs.unlinkSync(filePath);
+          } catch (e) {
+            console.error("No se pudo borrar archivo:", e.message);
+          }
+        }
+      }
+    }
+    await pool.query(
+      "DELETE FROM materiales WHERE evento_id = ? AND sesion = ?",
+      [eventoId, sesion],
+    );
+    res.json({ message: "Carpeta eliminada exitosamente" });
+  } catch (error) {
+    console.error("Error al eliminar sesión:", error);
+    res.status(500).json({ message: "Error al eliminar la carpeta" });
+  }
+};
+
 // ✅ EXPORTAR TODAS LAS FUNCIONES
 module.exports = {
   upload,
@@ -218,4 +252,5 @@ module.exports = {
   crearSesion,
   getSesionesByEvento,
   renombrarSesion,
+  eliminarSesion,
 };

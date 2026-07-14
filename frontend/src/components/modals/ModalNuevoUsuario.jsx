@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toast } from "react-hot-toast";
 import Modal from "../Modal";
 
 export default function ModalNuevoUsuario({
@@ -58,6 +59,17 @@ export default function ModalNuevoUsuario({
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const esEdicion = !!usuario;
+    const faltan = [];
+    if (!form.nombre.trim()) faltan.push("Nombre");
+    if (!form.apellido.trim()) faltan.push("Apellido");
+    if (!form.email.trim()) faltan.push("Correo");
+    if (!form.dni.trim()) faltan.push("DNI");
+    if (!form.telefono.trim()) faltan.push("Teléfono");
+    if (!esEdicion && !form.password.trim()) faltan.push("Contraseña");
+    if (faltan.length) {
+      return toast.error("Campos obligatorios: " + faltan.join(", "));
+    }
     // Solo enviar password si se ingresó uno nuevo (o si es creación)
     const dataToSend = { ...form, id: usuario?.id };
     if (usuario && !form.password) {
@@ -147,21 +159,23 @@ export default function ModalNuevoUsuario({
             </select>
           </div>
           <div>
-            <label className="label-input">DNI / Documento</label>
+            <label className="label-input">DNI / Documento *</label>
             <input
               name="dni"
               value={form.dni}
               onChange={handleChange}
               className="input-field"
+              required
             />
           </div>
           <div>
-            <label className="label-input">Teléfono</label>
+            <label className="label-input">Teléfono *</label>
             <input
               name="telefono"
               value={form.telefono}
               onChange={handleChange}
               className="input-field"
+              required
             />
           </div>
           <div className="col-span-2">

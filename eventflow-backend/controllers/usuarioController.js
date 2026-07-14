@@ -47,7 +47,7 @@ exports.uploadFoto = async (req, res) => {
 exports.getUsuarios = async (req, res) => {
   try {
     const [usuarios] = await pool.query(
-      "SELECT id, nombre, apellido, email, rol, dni, telefono, estado, foto_url, password_changed_at, fecha_creacion FROM usuarios ORDER BY fecha_creacion DESC",
+      "SELECT id, nombre, apellido, email, rol, dni, telefono, estado, empresa, foto_url, intentos_fallidos, bloqueado_hasta, password_changed_at, fecha_creacion FROM usuarios ORDER BY fecha_creacion DESC",
     );
     res.json(usuarios);
   } catch (error) {
@@ -59,12 +59,18 @@ exports.getUsuarios = async (req, res) => {
 // Crear nuevo usuario
 exports.createUsuario = async (req, res) => {
   try {
-    const { nombre, apellido, email, password, rol, dni, telefono, estado } =
+    const { nombre, apellido, email, password, rol, dni, telefono, estado, empresa } =
       req.body;
+
+    if (!nombre || !apellido || !email || !dni || !telefono) {
+      return res.status(400).json({
+        message: "Faltan campos obligatorios (nombre, apellido, correo, DNI y teléfono)",
+      });
+    }
 
     const hash = await hashPassword(password || "123456");
     const [result] = await pool.query(
-      "INSERT INTO usuarios (nombre, apellido, email, password, rol, dni, telefono, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO usuarios (nombre, apellido, email, password, rol, dni, telefono, estado, empresa) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [
         nombre,
         apellido,
@@ -74,6 +80,7 @@ exports.createUsuario = async (req, res) => {
         dni,
         telefono,
         estado || "Activo",
+        empresa || null,
       ],
     );
 
@@ -95,11 +102,18 @@ exports.createUsuario = async (req, res) => {
 exports.updateUsuario = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre, apellido, email, rol, dni, telefono, estado } = req.body;
+    const { nombre, apellido, email, rol, dni, telefono, estado, empresa } =
+      req.body;
+
+    if (!nombre || !apellido || !email) {
+      return res.status(400).json({
+        message: "Nombre, apellido y correo son obligatorios",
+      });
+    }
 
     await pool.query(
-      "UPDATE usuarios SET nombre=?, apellido=?, email=?, rol=?, dni=?, telefono=?, estado=? WHERE id=?",
-      [nombre, apellido, email, rol, dni, telefono, estado, id],
+      "UPDATE usuarios SET nombre=?, apellido=?, email=?, rol=?, dni=?, telefono=?, estado=?, empresa=? WHERE id=?",
+      [nombre, apellido, email, rol, dni, telefono, estado, empresa || null, id],
     );
 
     res.json({ message: "Usuario actualizado exitosamente" });
@@ -123,6 +137,21 @@ exports.deleteUsuario = async (req, res) => {
   } catch (error) {
     console.error("Error al eliminar usuario:", error);
     res.status(500).json({ message: "Error al eliminar usuario" });
+  }
+};
+
+// Desbloquear una cuenta (admin)
+exports.desbloquearUsuario = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query(
+      "UPDATE usuarios SET intentos_fallidos = 0, bloqueado_hasta = NULL WHERE id = ?",
+      [id],
+    );
+    res.json({ message: "Cuenta desbloqueada" });
+  } catch (error) {
+    console.error("Error al desbloquear usuario:", error);
+    res.status(500).json({ message: "Error al desbloquear la cuenta" });
   }
 };
 

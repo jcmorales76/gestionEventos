@@ -14,6 +14,19 @@ export default function Participantes() {
   const [modalParticipanteOpen, setModalParticipanteOpen] = useState(false);
   const [participanteEditando, setParticipanteEditando] = useState(null);
   const [participanteAEliminar, setParticipanteAEliminar] = useState(null);
+  const [inscParticipante, setInscParticipante] = useState(null);
+  const [inscLista, setInscLista] = useState([]);
+
+  const verInscripciones = async (part) => {
+    setInscParticipante(part);
+    setInscLista([]);
+    try {
+      const res = await fetch(`/api/participantes/${part.id}/eventos`);
+      if (res.ok) setInscLista(await res.json());
+    } catch (error) {
+      toast.error("Error al cargar inscripciones");
+    }
+  };
 
   // Cargar participantes
   useEffect(() => {
@@ -275,6 +288,13 @@ export default function Participantes() {
                   <td className="table-td">
                     <div className="flex items-center gap-2">
                       <button
+                        onClick={() => verInscripciones(part)}
+                        title="Ver eventos inscritos"
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      >
+                        👁️
+                      </button>
+                      <button
                         onClick={() => abrirEditar(part)}
                         title="Editar participante"
                         className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
@@ -304,6 +324,52 @@ export default function Participantes() {
         onSave={handleGuardarParticipante}
         participante={participanteEditando}
       />
+
+      {/* Inscripciones del participante */}
+      <Modal
+        isOpen={Boolean(inscParticipante)}
+        onClose={() => setInscParticipante(null)}
+        title={`Eventos de ${inscParticipante?.nombre || ""} ${inscParticipante?.apellido || ""}`}
+        size="md"
+        footer={
+          <button
+            onClick={() => setInscParticipante(null)}
+            className="btn-secondary"
+          >
+            Cerrar
+          </button>
+        }
+      >
+        {inscLista.length === 0 ? (
+          <p className="text-sm text-gray-400 py-6 text-center">
+            No está inscrito en ningún evento.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {inscLista.map((ev) => (
+              <div
+                key={ev.inscripcion_id}
+                className="flex items-center justify-between p-3 border border-gray-200 rounded-lg"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {ev.nombre}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {ev.fecha_inicio
+                      ? new Date(ev.fecha_inicio).toLocaleDateString("es-ES")
+                      : ""}
+                    {ev.tipo ? ` · ${ev.tipo}` : ""}
+                  </p>
+                </div>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-medium flex-shrink-0">
+                  {ev.calidad || "Participante"}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Modal>
 
       {/* Modal de confirmación de eliminación */}
       <Modal

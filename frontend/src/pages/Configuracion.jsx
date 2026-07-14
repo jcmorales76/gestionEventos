@@ -368,6 +368,28 @@ export default function Configuracion() {
               <span className="text-gray-600 text-sm">intentos</span>
             </div>
           </div>
+
+          {/* Minutos de bloqueo */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <label className="font-semibold text-gray-900 block">
+                Minutos de bloqueo
+              </label>
+              <p className="text-sm text-gray-500 mt-1">
+                Tiempo que la cuenta queda bloqueada tras superar los intentos
+                (el admin puede desbloquear antes).
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                defaultValue={config.minutos_bloqueo?.valor || 30}
+                onBlur={(e) => handleSave("minutos_bloqueo", e.target.value)}
+                className="input-field w-24 text-center"
+              />
+              <span className="text-gray-600 text-sm">min</span>
+            </div>
+          </div>
         </div>
       </div>
 

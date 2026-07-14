@@ -9,12 +9,15 @@ exports.login = async (req, res) => {
     if (!email || !password)
       return res.status(400).json({ message: "Credenciales requeridas" });
 
-    // 1. Días de expiración desde la BD
+    // 1. Configuración (expiración + bloqueo por intentos)
     const [configRows] = await pool.query(
-      "SELECT valor FROM configuraciones WHERE clave = 'password_expiry_days'",
+      "SELECT clave, valor FROM configuraciones WHERE clave IN ('password_expiry_days','max_intentos_login','minutos_bloqueo')",
     );
-    const expiryDays =
-      configRows.length > 0 ? parseInt(configRows[0].valor) : 60;
+    const cfg = {};
+    configRows.forEach((r) => (cfg[r.clave] = r.valor));
+    const expiryDays = parseInt(cfg.password_expiry_days) || 60;
+    const maxIntentos = parseInt(cfg.max_intentos_login) || 5;
+    const minutosBloqueo = parseInt(cfg.minutos_bloqueo) || 30;
 
     // 2. Buscar usuario
     const [rows] = await pool.query("SELECT * FROM usuarios WHERE email = ?", [
@@ -25,10 +28,46 @@ exports.login = async (req, res) => {
 
     const user = rows[0];
 
+    // 2b. ¿Cuenta bloqueada por intentos fallidos?
+    if (user.bloqueado_hasta && new Date(user.bloqueado_hasta) > new Date()) {
+      const mins = Math.ceil(
+        (new Date(user.bloqueado_hasta) - new Date()) / 60000,
+      );
+      return res.status(423).json({
+        message: `Cuenta bloqueada por demasiados intentos. Intenta en ${mins} min o contacta al administrador.`,
+      });
+    }
+
     // 3. Verificar contraseña (soporta hash bcrypt y texto plano legado)
     const ok = await verifyPassword(password, user.password);
     if (!ok) {
-      return res.status(401).json({ message: "Credenciales incorrectas" });
+      const intentos = (user.intentos_fallidos || 0) + 1;
+      if (intentos >= maxIntentos) {
+        const hasta = new Date(Date.now() + minutosBloqueo * 60000);
+        await pool.query(
+          "UPDATE usuarios SET intentos_fallidos = ?, bloqueado_hasta = ? WHERE id = ?",
+          [intentos, hasta, user.id],
+        );
+        return res.status(423).json({
+          message: `Cuenta bloqueada por ${minutosBloqueo} minutos tras ${maxIntentos} intentos fallidos.`,
+        });
+      }
+      await pool.query(
+        "UPDATE usuarios SET intentos_fallidos = ? WHERE id = ?",
+        [intentos, user.id],
+      );
+      const restantes = maxIntentos - intentos;
+      return res.status(401).json({
+        message: `Credenciales incorrectas. Te queda(n) ${restantes} intento(s).`,
+      });
+    }
+
+    // Éxito: reiniciar contador y desbloquear
+    if (user.intentos_fallidos > 0 || user.bloqueado_hasta) {
+      await pool.query(
+        "UPDATE usuarios SET intentos_fallidos = 0, bloqueado_hasta = NULL WHERE id = ?",
+        [user.id],
+      );
     }
 
     // 3b. Migración perezosa: si estaba en texto plano, la ciframos ahora

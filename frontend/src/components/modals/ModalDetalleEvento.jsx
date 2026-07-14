@@ -1,147 +1,198 @@
+import { useState, useEffect } from "react";
+import { toast } from "react-hot-toast";
 import Modal from "../Modal";
+import ModalInscribirParticipantes from "./ModalInscribirParticipantes";
 
-export default function ModalDetalleEvento({
-  isOpen,
-  onClose,
-  evento,
-  onEdit,
-}) {
-  if (!evento) return null;
+export default function ModalDetalleEvento({ isOpen, onClose, evento, onEdit, onCambio }) {
+  const [inscritos, setInscritos] = useState([]);
+  const [modalInscribir, setModalInscribir] = useState(false);
 
-  const formatoFecha = (fechaString) => {
-    if (!fechaString) return "No definida";
-    const fecha = new Date(fechaString);
-    return fecha.toLocaleDateString("es-ES", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
+  useEffect(() => {
+    if (isOpen && evento?.id) fetchInscritos();
+  }, [isOpen, evento?.id]);
 
-  const getEstadoBadge = (estado) => {
-    switch (estado) {
-      case "Activo":
-        return "badge-success";
-      case "Próximo":
-        return "badge-warning";
-      case "Finalizado":
-        return "badge-info";
-      default:
-        return "bg-gray-100 text-gray-700";
+  const fetchInscritos = async () => {
+    try {
+      const res = await fetch(`/api/inscripciones/evento/${evento.id}`);
+      if (res.ok) setInscritos(await res.json());
+    } catch (error) {
+      console.error(error);
     }
   };
 
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Detalle del Evento"
-      size="md"
-      footer={
-        <>
-          <button onClick={onClose} className="btn-secondary">
-            Cerrar
-          </button>
-          <button onClick={onEdit} className="btn-primary">
-            Editar Evento
-          </button>
-        </>
+  const quitarInscripcion = async (id) => {
+    try {
+      const res = await fetch(`/api/inscripciones/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Inscripción quitada");
+        fetchInscritos();
+        if (onCambio) onCambio();
+      } else {
+        toast.error("No se pudo quitar (¿tiene certificado?)");
       }
-    >
-      <div className="space-y-6">
-        {/* Header con icono y título */}
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center text-2xl flex-shrink-0">
-            📅
-          </div>
-          <div className="flex-1">
-            <h3 className="text-xl font-bold text-gray-900 mb-2">
-              {evento.nombre}
-            </h3>
-            <span className={`badge ${getEstadoBadge(evento.estado)}`}>
-              {evento.estado}
-            </span>
-          </div>
-        </div>
+    } catch (error) {
+      toast.error("Error de conexión");
+    }
+  };
 
-        {/* Información en grid */}
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-              Tipo
-            </span>
-            <p className="text-gray-900 font-medium">{evento.tipo}</p>
-          </div>
-          <div>
-            <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-              Fecha
-            </span>
-            <p className="text-gray-900">{formatoFecha(evento.fecha_inicio)}</p>
-          </div>
-          <div>
-            <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-              Lugar
-            </span>
-            <p className="text-gray-900">{evento.lugar || "No definido"}</p>
-          </div>
-          <div>
-            <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-              Inscritos
-            </span>
-            <p className="text-gray-900 font-semibold">
-              {evento.inscritos || 0}/{evento.capacidad || 0}
-            </p>
-          </div>
-          <div className="col-span-2">
-            <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-              Expositor
-            </span>
-            <p className="text-gray-900">{evento.expositor || "No definido"}</p>
-          </div>
-          <div className="col-span-2">
-            <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-              Descripción
-            </span>
-            <p className="text-gray-700 mt-1 leading-relaxed">
-              {evento.descripcion || "Sin descripción"}
-            </p>
-          </div>
-          {evento.horas_academicas && (
-            <div>
-              <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-                Horas Académicas
-              </span>
-              <p className="text-gray-900">{evento.horas_academicas} horas</p>
-            </div>
-          )}
-          {evento.instructor && (
-            <div>
-              <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-                Instructor/Organizador
-              </span>
-              <p className="text-gray-900">{evento.instructor}</p>
-            </div>
-          )}
-        </div>
+  if (!evento) return null;
 
-        {/* Barra de ocupación */}
-        <div className="pt-4 border-t border-gray-100">
-          <div className="flex justify-between text-sm mb-2">
-            <span className="text-gray-600 font-medium">Ocupación</span>
-            <span className="font-semibold text-gray-900">
-              {evento.inscritos || 0}/{evento.capacidad || 0}
-            </span>
+  const formatoFecha = (f) =>
+    f
+      ? new Date(f).toLocaleDateString("es-ES", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : "No definida";
+
+  const getEstadoBadge = (estado) =>
+    estado === "Activo"
+      ? "badge-success"
+      : estado === "Próximo"
+        ? "badge-warning"
+        : estado === "Finalizado"
+          ? "badge-info"
+          : "bg-gray-100 text-gray-700";
+
+  const calidadColor = (c) => {
+    const v = (c || "").toLowerCase();
+    if (v.includes("expositor")) return "bg-purple-100 text-purple-700";
+    if (v.includes("organizador")) return "bg-blue-100 text-blue-700";
+    if (v.includes("auspiciador")) return "bg-amber-100 text-amber-700";
+    return "bg-gray-100 text-gray-700";
+  };
+
+  return (
+    <>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        title="Detalle del Evento"
+        size="lg"
+        footer={
+          <>
+            <button onClick={onClose} className="btn-secondary">
+              Cerrar
+            </button>
+            <button onClick={onEdit} className="btn-primary">
+              Editar Evento
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center text-2xl flex-shrink-0">
+              📅
+            </div>
+            <div className="flex-1">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                {evento.nombre}
+              </h3>
+              <span className={`badge ${getEstadoBadge(evento.estado)}`}>
+                {evento.estado}
+              </span>
+            </div>
           </div>
-          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-red-600 rounded-full transition-all duration-500"
-              style={{
-                width: `${evento.capacidad > 0 ? ((evento.inscritos || 0) / evento.capacidad) * 100 : 0}%`,
-              }}
+
+          {/* Info */}
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <Campo label="Tipo" valor={evento.tipo} />
+            <Campo label="Fecha" valor={formatoFecha(evento.fecha_inicio)} />
+            <Campo label="Lugar" valor={evento.lugar || "No definido"} />
+            <Campo
+              label="Capacidad"
+              valor={`${inscritos.length}/${evento.capacidad || 0}`}
             />
+            <div className="col-span-2">
+              <Campo
+                label="Descripción"
+                valor={evento.descripcion || "Sin descripción"}
+              />
+            </div>
+          </div>
+
+          {/* Participantes inscritos */}
+          <div className="pt-4 border-t border-gray-100">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-bold text-gray-900">
+                Participantes inscritos ({inscritos.length})
+              </h4>
+              <button
+                onClick={() => setModalInscribir(true)}
+                className="btn-primary text-sm"
+              >
+                + Inscribir participantes
+              </button>
+            </div>
+
+            {inscritos.length === 0 ? (
+              <p className="text-sm text-gray-400 py-4 text-center">
+                Aún no hay inscritos. Usa el botón para agregarlos.
+              </p>
+            ) : (
+              <div className="border border-gray-200 rounded-lg max-h-64 overflow-y-auto divide-y divide-gray-100">
+                {inscritos.map((i) => (
+                  <div
+                    key={i.id}
+                    className="flex items-center justify-between p-3 hover:bg-gray-50"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {i.nombre} {i.apellido}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {i.email}
+                        {i.empresa ? ` · ${i.empresa}` : ""}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${calidadColor(i.calidad)}`}
+                      >
+                        {i.calidad || "Participante"}
+                      </span>
+                      <button
+                        onClick={() => quitarInscripcion(i.id)}
+                        className="text-gray-400 hover:text-red-600 p-1"
+                        title="Quitar inscripción"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-      </div>
-    </Modal>
+      </Modal>
+
+      {modalInscribir && (
+        <ModalInscribirParticipantes
+          isOpen={modalInscribir}
+          onClose={() => setModalInscribir(false)}
+          eventoId={evento.id}
+          eventoNombre={evento.nombre}
+          onInscrito={() => {
+            fetchInscritos();
+            if (onCambio) onCambio();
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function Campo({ label, valor }) {
+  return (
+    <div>
+      <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+        {label}
+      </span>
+      <p className="text-gray-900 font-medium">{valor}</p>
+    </div>
   );
 }

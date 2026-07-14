@@ -6,6 +6,7 @@ const {
   updateUsuario,
   deleteUsuario,
   resetPassword,
+  desbloquearUsuario,
   uploadAvatar,
   uploadFoto,
 } = require("../controllers/usuarioController");
@@ -15,6 +16,7 @@ router.post("/", createUsuario);
 router.put("/:id", updateUsuario);
 router.delete("/:id", deleteUsuario);
 router.put("/:id/reset-password", resetPassword);
+router.put("/:id/desbloquear", desbloquearUsuario);
 router.post("/:id/foto", uploadAvatar.single("foto"), uploadFoto);
 
 module.exports = router;

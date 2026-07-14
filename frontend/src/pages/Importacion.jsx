@@ -3,8 +3,10 @@ import { toast } from "react-hot-toast";
 import * as XLSX from "xlsx";
 
 export default function Importacion() {
+  const CALIDADES = ["Participante", "Expositor", "Organizador", "Auspiciador"];
   const [eventos, setEventos] = useState([]);
   const [eventoId, setEventoId] = useState("");
+  const [calidad, setCalidad] = useState("Participante");
   const [archivo, setArchivo] = useState(null);
   const [filas, setFilas] = useState([]);
   const [errores, setErrores] = useState([]);
@@ -94,7 +96,7 @@ export default function Importacion() {
       const res = await fetch("/api/importacion", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventoId, participantes: filas }),
+        body: JSON.stringify({ eventoId, participantes: filas, calidad }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -156,20 +158,34 @@ export default function Importacion() {
             <span className="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center text-sm">
               1
             </span>
-            Seleccionar Evento
+            Seleccionar Evento y Calidad
           </h3>
-          <select
-            value={eventoId}
-            onChange={(e) => setEventoId(e.target.value)}
-            className="input-field md:w-96"
-          >
-            <option value="">-- Seleccionar evento destino --</option>
-            {eventos.map((ev) => (
-              <option key={ev.id} value={ev.id}>
-                {ev.nombre}
-              </option>
-            ))}
-          </select>
+          <div className="flex flex-col md:flex-row gap-3">
+            <select
+              value={eventoId}
+              onChange={(e) => setEventoId(e.target.value)}
+              className="input-field md:w-96"
+            >
+              <option value="">-- Seleccionar evento destino --</option>
+              {eventos.map((ev) => (
+                <option key={ev.id} value={ev.id}>
+                  {ev.nombre}
+                </option>
+              ))}
+            </select>
+            <select
+              value={calidad}
+              onChange={(e) => setCalidad(e.target.value)}
+              className="input-field md:w-56"
+              title="Calidad de la inscripción"
+            >
+              {CALIDADES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
           {eventos.length === 0 && (
             <p className="text-xs text-amber-600 mt-2">
               No hay eventos registrados. Crea un evento primero.

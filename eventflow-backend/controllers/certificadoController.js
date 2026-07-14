@@ -61,17 +61,20 @@ async function crearPDFCertificado(inscripcion, callback) {
     const toX = (percent) => (percent / 100) * doc.page.width;
     const toY = (percent) => (percent / 100) * doc.page.height;
 
-    // Centra el texto EXACTAMENTE sobre el punto (x, y) en %, igual que la vista
-    // previa del frontend: se mide el ancho/alto real y se ancla por el centro.
+    // Centra el texto sobre el punto (x, y) en %. Si es muy largo para el ancho
+    // disponible, se ajusta a varias líneas (centradas). El ancho máximo se
+    // limita para que no se salga del borde de la hoja.
     const drawCentered = (texto, xPct, yPct, fontSize, font, color) => {
       doc
         .fontSize(fontSize)
         .font(font)
         .fillColor(color || "#1e3a8a");
-      const ancho = doc.widthOfString(texto);
-      const alto = doc.currentLineHeight();
-      doc.text(texto, toX(xPct) - ancho / 2, toY(yPct) - alto / 2, {
-        lineBreak: false,
+      const cx = toX(xPct);
+      const maxW = Math.max(100, 2 * Math.min(cx, doc.page.width - cx) - 20);
+      const alto = doc.heightOfString(texto, { width: maxW, align: "center" });
+      doc.text(texto, cx - maxW / 2, toY(yPct) - alto / 2, {
+        width: maxW,
+        align: "center",
       });
     };
 

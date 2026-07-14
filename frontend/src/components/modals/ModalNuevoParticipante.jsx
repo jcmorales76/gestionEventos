@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toast } from "react-hot-toast";
 import Modal from "../Modal";
 
 const FORM_VACIO = {
@@ -19,13 +20,11 @@ export default function ModalNuevoParticipante({
   participante = null,
 }) {
   const esEdicion = Boolean(participante);
-  const [eventos, setEventos] = useState([]);
   const [form, setForm] = useState(FORM_VACIO);
 
-  // Cargar eventos y prellenar el formulario al abrir el modal
+  // Prellenar el formulario al abrir el modal
   useEffect(() => {
     if (isOpen) {
-      fetchEventos();
       if (participante) {
         setForm({
           nombre: participante.nombre || "",
@@ -43,24 +42,21 @@ export default function ModalNuevoParticipante({
     }
   }, [isOpen, participante]);
 
-  const fetchEventos = async () => {
-    try {
-      const response = await fetch("/api/eventos");
-      if (response.ok) {
-        const data = await response.json();
-        setEventos(data);
-      }
-    } catch (error) {
-      console.error("Error cargando eventos:", error);
-    }
-  };
-
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const faltan = [];
+    if (!form.nombre.trim()) faltan.push("Nombre");
+    if (!form.apellido.trim()) faltan.push("Apellido");
+    if (!form.email.trim()) faltan.push("Correo");
+    if (!form.dni.trim()) faltan.push("DNI");
+    if (!form.telefono.trim()) faltan.push("Teléfono");
+    if (faltan.length) {
+      return toast.error("Campos obligatorios: " + faltan.join(", "));
+    }
     onSave(form);
   };
 
@@ -114,21 +110,23 @@ export default function ModalNuevoParticipante({
             />
           </div>
           <div>
-            <label className="label-input">DNI / Documento</label>
+            <label className="label-input">DNI / Documento *</label>
             <input
               name="dni"
               value={form.dni}
               onChange={handleChange}
               className="input-field"
+              required
             />
           </div>
           <div>
-            <label className="label-input">Teléfono</label>
+            <label className="label-input">Teléfono *</label>
             <input
               name="telefono"
               value={form.telefono}
               onChange={handleChange}
               className="input-field"
+              required
             />
           </div>
           <div className="col-span-2">
@@ -141,24 +139,6 @@ export default function ModalNuevoParticipante({
               placeholder="Nombre de la empresa"
             />
           </div>
-          {!esEdicion && (
-            <div className="col-span-2">
-              <label className="label-input">Evento</label>
-              <select
-                name="evento"
-                value={form.evento}
-                onChange={handleChange}
-                className="input-field"
-              >
-                <option value="">-- Sin evento asignado --</option>
-                {eventos.map((evento) => (
-                  <option key={evento.id} value={evento.nombre}>
-                    {evento.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
           <div>
             <label className="label-input">Estado</label>
             <select

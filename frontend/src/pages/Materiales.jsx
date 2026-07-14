@@ -25,6 +25,33 @@ export default function Materiales() {
   const [sesionARenombrar, setSesionARenombrar] = useState(null);
   const [nuevoNombreSesion, setNuevoNombreSesion] = useState("");
 
+  // Eliminar sesión (carpeta)
+  const [sesionAEliminar, setSesionAEliminar] = useState(null);
+
+  const handleEliminarSesion = async () => {
+    try {
+      const res = await fetch("/api/materiales/eliminar-sesion", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventoId: eventoSeleccionado,
+          sesion: sesionAEliminar,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("🗑️ Carpeta eliminada");
+        setSesionAEliminar(null);
+        fetchMateriales();
+        fetchSesiones();
+      } else {
+        toast.error(data.message || "Error al eliminar");
+      }
+    } catch (error) {
+      toast.error("Error de conexión");
+    }
+  };
+
   const abrirRenombrar = (sesion) => {
     setSesionARenombrar(sesion);
     setNuevoNombreSesion(sesion);
@@ -319,6 +346,16 @@ export default function Materiales() {
                     </button>
                     <button
                       onClick={(e) => {
+                        e.stopPropagation();
+                        setSesionAEliminar(sesion);
+                      }}
+                      className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Eliminar carpeta"
+                    >
+                      🗑️
+                    </button>
+                    <button
+                      onClick={(e) => {
                         e.stopPropagation(); // Evitar que se cierre la persiana al subir archivo
                         handleSubirMaterial(sesion);
                       }}
@@ -487,6 +524,16 @@ export default function Materiales() {
         title="¿Eliminar material?"
         message={`¿Estás seguro de eliminar <strong>"${materialAEliminar?.nombre_original}"</strong>?<br/><br/><span style="color: #dc2626; font-weight: 600;">Esta acción no se puede deshacer.</span>`}
         confirmText="Eliminar"
+        type="danger"
+      />
+
+      <ModalConfirmacionPersonalizada
+        isOpen={Boolean(sesionAEliminar)}
+        onClose={() => setSesionAEliminar(null)}
+        onConfirm={handleEliminarSesion}
+        title="¿Eliminar carpeta?"
+        message={`Se eliminará la carpeta <strong>"${sesionAEliminar}"</strong> y <strong>todos sus archivos</strong>.<br/><br/><span style="color: #dc2626; font-weight: 600;">Esta acción no se puede deshacer.</span>`}
+        confirmText="Eliminar carpeta"
         type="danger"
       />
     </div>

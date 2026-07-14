@@ -11,7 +11,7 @@ const { hashPassword } = require("../utils/security");
 // y lo inscribe en el evento si aún no lo estaba.
 exports.importarParticipantes = async (req, res) => {
   try {
-    const { eventoId, participantes } = req.body;
+    const { eventoId, participantes, calidad } = req.body;
 
     if (!eventoId) {
       return res
@@ -98,8 +98,8 @@ exports.importarParticipantes = async (req, res) => {
           resumen.yaInscritos++;
         } else {
           await pool.query(
-            "INSERT INTO inscripciones (usuario_id, evento_id) VALUES (?, ?)",
-            [userId, eventoId],
+            "INSERT INTO inscripciones (usuario_id, evento_id, calidad) VALUES (?, ?, ?)",
+            [userId, eventoId, calidad || "Participante"],
           );
           resumen.inscripcionesNuevas++;
           inscritoAhora = true;

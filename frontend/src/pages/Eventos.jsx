@@ -662,6 +662,7 @@ export default function Eventos() {
         onClose={() => setModalDetalleOpen(false)}
         evento={eventoSeleccionado}
         onEdit={handleAbrirEditar}
+        onCambio={fetchEventos}
       />
 
       <ModalEditarEvento

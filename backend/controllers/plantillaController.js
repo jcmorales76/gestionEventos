@@ -221,18 +221,19 @@ exports.generarCertificadoConPlantilla = async function (req, res) {
       return (parseFloat(pct) / 100) * doc.page.height;
     };
 
-    // Centra el texto EXACTAMENTE sobre el punto (x, y), igual que la vista
-    // previa del frontend (ancla en el centro del texto). Se mide el ancho/alto
-    // real y se resta la mitad a cada eje. Tamaño y color se leen de la BD.
+    // Centra el texto sobre el punto (x, y). Si es muy largo, se ajusta a varias
+    // líneas centradas, sin salirse del borde de la hoja. Tamaño/color de la BD.
     const drawCentered = function (texto, xPct, yPct, fontSize, color) {
       doc
         .fontSize(fontSize)
         .font("Helvetica-Bold")
         .fillColor(color || "#1e3a8a");
-      const ancho = doc.widthOfString(texto);
-      const alto = doc.currentLineHeight();
-      doc.text(texto, toX(xPct) - ancho / 2, toY(yPct) - alto / 2, {
-        lineBreak: false,
+      const cx = toX(xPct);
+      const maxW = Math.max(100, 2 * Math.min(cx, doc.page.width - cx) - 20);
+      const alto = doc.heightOfString(texto, { width: maxW, align: "center" });
+      doc.text(texto, cx - maxW / 2, toY(yPct) - alto / 2, {
+        width: maxW,
+        align: "center",
       });
     };
 
@@ -337,17 +338,22 @@ exports.generarCertificadosMasivos = async function (req, res) {
           return (parseFloat(pct) / 100) * doc.page.height;
         };
 
-        // Centra el texto EXACTAMENTE sobre el punto (x, y), igual que la vista
-        // previa del frontend. Tamaño y color se leen de la BD.
+        // Centra el texto sobre el punto (x, y); si es muy largo se ajusta a
+        // varias líneas centradas, sin salirse del borde. Tamaño/color de la BD.
         const drawCentered = function (texto, xPct, yPct, fontSize, color) {
           doc
             .fontSize(fontSize)
             .font("Helvetica-Bold")
             .fillColor(color || "#1e3a8a");
-          const ancho = doc.widthOfString(texto);
-          const alto = doc.currentLineHeight();
-          doc.text(texto, toX(xPct) - ancho / 2, toY(yPct) - alto / 2, {
-            lineBreak: false,
+          const cx = toX(xPct);
+          const maxW = Math.max(100, 2 * Math.min(cx, doc.page.width - cx) - 20);
+          const alto = doc.heightOfString(texto, {
+            width: maxW,
+            align: "center",
+          });
+          doc.text(texto, cx - maxW / 2, toY(yPct) - alto / 2, {
+            width: maxW,
+            align: "center",
           });
         };
 
