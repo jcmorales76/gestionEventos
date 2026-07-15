@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
+import ReporteEncuesta from "../components/ReporteEncuesta";
 
 const TIPOS = [
   { valor: "abierta", label: "Abierta (texto libre)", icon: "📝" },
@@ -23,6 +24,7 @@ export default function Encuestas() {
   const [preguntas, setPreguntas] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const [vista, setVista] = useState("constructor"); // "constructor" | "resultados"
 
   useEffect(() => {
     fetch("/api/eventos")
@@ -181,11 +183,40 @@ export default function Encuestas() {
         </select>
       </div>
 
-      {cargando && (
+      {eventoId && (
+        <div className="flex gap-2">
+          <button
+            onClick={() => setVista("constructor")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium border ${
+              vista === "constructor"
+                ? "bg-red-600 text-white border-red-600"
+                : "bg-white text-gray-600 border-gray-200"
+            }`}
+          >
+            🛠️ Constructor
+          </button>
+          <button
+            onClick={() => setVista("resultados")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium border ${
+              vista === "resultados"
+                ? "bg-red-600 text-white border-red-600"
+                : "bg-white text-gray-600 border-gray-200"
+            }`}
+          >
+            📊 Resultados
+          </button>
+        </div>
+      )}
+
+      {eventoId && vista === "resultados" && (
+        <ReporteEncuesta eventoId={eventoId} />
+      )}
+
+      {cargando && vista === "constructor" && (
         <div className="text-center text-gray-500 py-8">Cargando encuesta...</div>
       )}
 
-      {eventoId && !cargando && (
+      {eventoId && vista === "constructor" && !cargando && (
         <>
           {/* Datos de la encuesta */}
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 space-y-4">

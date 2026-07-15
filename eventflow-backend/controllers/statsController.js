@@ -92,20 +92,35 @@ exports.getReportes = async (req, res) => {
        WHERE c.id IS NULL AND e.fecha_fin < NOW()`,
     );
 
+    // Descargas registradas
+    const [[certDescPersonas]] = await pool.query(
+      "SELECT COUNT(DISTINCT usuario_id) AS n FROM descargas WHERE tipo = 'certificado'",
+    );
+    const [[matDescTotal]] = await pool.query(
+      "SELECT COUNT(*) AS n FROM descargas WHERE tipo = 'material'",
+    );
+    const [[matDescPersonas]] = await pool.query(
+      "SELECT COUNT(DISTINCT usuario_id) AS n FROM descargas WHERE tipo = 'material'",
+    );
+
     const [tablaCertificados] = await pool.query(
-      `SELECT c.nombre_participante AS participante, e.nombre AS evento,
-              c.fecha_generacion, c.tipo
+      `SELECT c.id, c.nombre_participante AS participante, e.nombre AS evento,
+              c.fecha_generacion, c.tipo,
+              (SELECT COUNT(*) FROM descargas d
+                 WHERE d.tipo = 'certificado' AND d.referencia_id = c.id) AS descargas
        FROM certificados c
        JOIN eventos e ON c.evento_id = e.id
        ORDER BY c.fecha_generacion DESC LIMIT 10`,
     );
 
     const [tablaMateriales] = await pool.query(
-      `SELECT m.nombre_original AS material, e.nombre AS evento, m.sesion
+      `SELECT m.id, m.nombre_original AS material, e.nombre AS evento, m.sesion,
+              (SELECT COUNT(*) FROM descargas d
+                 WHERE d.tipo = 'material' AND d.referencia_id = m.id) AS descargas
        FROM materiales m
        JOIN eventos e ON m.evento_id = e.id
        WHERE m.nombre_archivo <> ''
-       ORDER BY m.fecha_subida DESC LIMIT 10`,
+       ORDER BY descargas DESC, m.fecha_subida DESC LIMIT 10`,
     );
 
     res.json({
@@ -113,6 +128,9 @@ exports.getReportes = async (req, res) => {
         totalInscritos: totInsc.n,
         participantesActivos: partActivos.n,
         eventosActivos: evActivos.n,
+        certificadosDescargados: certDescPersonas.n,
+        materialesDescargas: matDescTotal.n,
+        materialesDescargadosPersonas: matDescPersonas.n,
       },
       inscritosPorEvento,
       eventosPorTipo,

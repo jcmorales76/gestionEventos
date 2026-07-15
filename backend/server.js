@@ -23,6 +23,7 @@ const importacionRoutes = require("./routes/importacionRoutes");
 const encuestaRoutes = require("./routes/encuestaRoutes");
 const statsRoutes = require("./routes/statsRoutes");
 const tipoEventoRoutes = require("./routes/tipoEventoRoutes");
+const descargaRoutes = require("./routes/descargaRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -55,6 +56,7 @@ app.use("/api/inscripciones", inscripcionRoutes);
 app.use("/api/plantillas", plantillaRoutes);
 app.use("/api/encuestas", encuestaRoutes);
 app.use("/api/tipos-evento", tipoEventoRoutes);
+app.use("/api/descargas", descargaRoutes);
 // Solo administradores:
 app.use("/api/config", requireRole("admin"), configRoutes);
 app.use("/api/usuarios", requireRole("admin"), usuarioRoutes);

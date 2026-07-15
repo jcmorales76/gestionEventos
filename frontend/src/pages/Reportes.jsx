@@ -73,7 +73,7 @@ export default function Reportes() {
       </div>
 
       {/* Resumen */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <ResumenCard
           label="Total Inscritos"
           value={data.resumen.totalInscritos}
@@ -91,6 +91,18 @@ export default function Reportes() {
           value={data.resumen.eventosActivos}
           icon="📅"
           color="bg-purple-100 text-purple-600"
+        />
+        <ResumenCard
+          label="Descargaron su certificado"
+          value={data.resumen.certificadosDescargados}
+          icon="📥"
+          color="bg-red-100 text-red-600"
+        />
+        <ResumenCard
+          label="Descargas de materiales"
+          value={data.resumen.materialesDescargas}
+          icon="📂"
+          color="bg-amber-100 text-amber-600"
         />
       </div>
 
@@ -247,12 +259,13 @@ export default function Reportes() {
                 <th className="table-th">Evento</th>
                 <th className="table-th">Calidad</th>
                 <th className="table-th">Fecha</th>
+                <th className="table-th">Descargas</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {data.tablaCertificados.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="table-td text-center text-gray-400">
+                  <td colSpan={5} className="table-td text-center text-gray-400">
                     Sin certificados generados
                   </td>
                 </tr>
@@ -265,6 +278,17 @@ export default function Reportes() {
                     <td className="table-td">{row.evento}</td>
                     <td className="table-td">{row.tipo}</td>
                     <td className="table-td">{fmtFecha(row.fecha_generacion)}</td>
+                    <td className="table-td">
+                      {row.descargas > 0 ? (
+                        <span className="badge badge-success">
+                          ✓ {row.descargas}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">
+                          No descargado
+                        </span>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}
@@ -280,12 +304,13 @@ export default function Reportes() {
                 <th className="table-th">Material</th>
                 <th className="table-th">Evento</th>
                 <th className="table-th">Sesión</th>
+                <th className="table-th">Descargas</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {data.tablaMateriales.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="table-td text-center text-gray-400">
+                  <td colSpan={4} className="table-td text-center text-gray-400">
                     Sin materiales
                   </td>
                 </tr>
@@ -297,6 +322,9 @@ export default function Reportes() {
                     </td>
                     <td className="table-td">{row.evento}</td>
                     <td className="table-td">{row.sesion}</td>
+                    <td className="table-td font-semibold">
+                      {row.descargas || 0}
+                    </td>
                   </tr>
                 ))
               )}

@@ -157,7 +157,11 @@ async function crearPDFCertificado(inscripcion, callback) {
           ],
         );
 
-        callback(null, { urlPdf, fileName });
+        const [row] = await pool.query(
+          "SELECT id FROM certificados WHERE inscripcion_id = ?",
+          [inscripcion.inscripcion_id],
+        );
+        callback(null, { urlPdf, fileName, certificadoId: row[0]?.id || null });
       } catch (dbError) {
         console.error("Error BD:", dbError);
         callback(dbError, null);
@@ -343,6 +347,7 @@ exports.getMisCertificados = async (req, res) => {
         requiere_encuesta: !!r.requiere_encuesta,
         encuesta_respondida: r.encuesta_respondida > 0,
         tiene_certificado: !!r.certificado_id,
+        certificado_id: r.certificado_id || null,
         url_pdf: r.url_pdf || null,
         tiene_plantilla: r.tiene_plantilla > 0,
       })),
@@ -410,7 +415,11 @@ exports.generarCertificadoParticipante = async (req, res) => {
           message: error.message || "Error al generar el certificado",
         });
       }
-      res.json({ message: "Certificado generado", url: result.urlPdf });
+      res.json({
+        message: "Certificado generado",
+        url: result.urlPdf,
+        certificadoId: result.certificadoId,
+      });
     });
   } catch (error) {
     console.error("Error:", error);

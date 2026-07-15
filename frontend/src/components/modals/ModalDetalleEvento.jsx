@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import Modal from "../Modal";
 import ModalInscribirParticipantes from "./ModalInscribirParticipantes";
+import { exportarExcel, exportarPDF } from "../../utils/exportar";
 
 export default function ModalDetalleEvento({ isOpen, onClose, evento, onEdit, onCambio }) {
   const [inscritos, setInscritos] = useState([]);
@@ -54,6 +55,58 @@ export default function ModalDetalleEvento({ isOpen, onClose, evento, onEdit, on
         : estado === "Finalizado"
           ? "badge-info"
           : "bg-gray-100 text-gray-700";
+
+  // ---- Exportar lista de inscritos ----
+  const filasExport = () =>
+    inscritos.map((i, idx) => ({
+      "#": idx + 1,
+      Nombre: i.nombre,
+      Apellido: i.apellido,
+      DNI: i.dni || "",
+      Correo: i.email,
+      Empresa: i.empresa || "",
+      Calidad: i.calidad || "Participante",
+      Inscrito: i.fecha_inscripcion
+        ? new Date(i.fecha_inscripcion).toLocaleDateString("es-ES")
+        : "",
+    }));
+
+  const nombreArchivo = `inscritos_${(evento?.nombre || "evento").replace(/[^a-zA-Z0-9]/g, "_")}`;
+
+  const handleExcel = () => {
+    if (inscritos.length === 0) return toast.error("No hay inscritos que exportar");
+    exportarExcel(filasExport(), nombreArchivo, "Inscritos");
+  };
+
+  const handlePDF = () => {
+    if (inscritos.length === 0) return toast.error("No hay inscritos que exportar");
+    exportarPDF({
+      titulo: `Inscritos · ${evento.nombre}`,
+      subtitulo: `Total: ${inscritos.length} · Capacidad: ${evento.capacidad || 0}`,
+      columnas: [
+        "#",
+        "Nombre",
+        "Apellido",
+        "DNI",
+        "Correo",
+        "Empresa",
+        "Calidad",
+        "Inscrito",
+      ],
+      filas: filasExport().map((f) => [
+        f["#"],
+        f.Nombre,
+        f.Apellido,
+        f.DNI,
+        f.Correo,
+        f.Empresa,
+        f.Calidad,
+        f.Inscrito,
+      ]),
+      nombreArchivo,
+      orientacion: "landscape",
+    });
+  };
 
   const calidadColor = (c) => {
     const v = (c || "").toLowerCase();
@@ -116,16 +169,32 @@ export default function ModalDetalleEvento({ isOpen, onClose, evento, onEdit, on
 
           {/* Participantes inscritos */}
           <div className="pt-4 border-t border-gray-100">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
               <h4 className="font-bold text-gray-900">
                 Participantes inscritos ({inscritos.length})
               </h4>
-              <button
-                onClick={() => setModalInscribir(true)}
-                className="btn-primary text-sm"
-              >
-                + Inscribir participantes
-              </button>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={handleExcel}
+                  className="btn-secondary text-sm"
+                  title="Exportar a Excel"
+                >
+                  📊 Excel
+                </button>
+                <button
+                  onClick={handlePDF}
+                  className="btn-secondary text-sm"
+                  title="Exportar a PDF"
+                >
+                  📄 PDF
+                </button>
+                <button
+                  onClick={() => setModalInscribir(true)}
+                  className="btn-primary text-sm"
+                >
+                  + Inscribir
+                </button>
+              </div>
             </div>
 
             {inscritos.length === 0 ? (

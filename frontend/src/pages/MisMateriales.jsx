@@ -80,7 +80,17 @@ export default function MisMateriales() {
   const formatoFecha = (f) =>
     f ? new Date(f).toLocaleDateString("es-ES") : "";
 
-  const descargar = (mat) => {
+  const descargar = async (mat) => {
+    // Registra la descarga para las estadísticas (no bloquea si falla)
+    try {
+      await fetch("/api/descargas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tipo: "material", referenciaId: mat.id }),
+      });
+    } catch (error) {
+      /* silencioso */
+    }
     window.open(mat.url_descarga, "_blank");
     toast.success(`📥 Descargando ${mat.nombre_original}`);
   };

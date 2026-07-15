@@ -306,3 +306,105 @@ exports.getEncuestasParticipante = async (req, res) => {
     res.status(500).json({ message: "Error al obtener encuestas" });
   }
 };
+
+// Reporte de resultados de la encuesta de un evento (admin)
+exports.getReporteEncuesta = async (req, res) => {
+  try {
+    const { eventoId } = req.params;
+
+    const [enc] = await pool.query(
+      "SELECT * FROM encuestas WHERE evento_id = ?",
+      [eventoId],
+    );
+    if (enc.length === 0) return res.json({ encuesta: null });
+    const encuesta = enc[0];
+
+    const [[tot]] = await pool.query(
+      "SELECT COUNT(*) AS n FROM encuesta_respuestas WHERE encuesta_id = ?",
+      [encuesta.id],
+    );
+    const [[insc]] = await pool.query(
+      "SELECT COUNT(*) AS n FROM inscripciones WHERE evento_id = ?",
+      [eventoId],
+    );
+
+    const [preguntas] = await pool.query(
+      "SELECT * FROM encuesta_preguntas WHERE encuesta_id = ? ORDER BY orden, id",
+      [encuesta.id],
+    );
+    const pids = preguntas.map((p) => p.id);
+
+    let opciones = [];
+    let detalles = [];
+    if (pids.length > 0) {
+      [opciones] = await pool.query(
+        "SELECT * FROM encuesta_opciones WHERE pregunta_id IN (?)",
+        [pids],
+      );
+      [detalles] = await pool.query(
+        `SELECT d.pregunta_id, d.opcion_id, d.valor
+         FROM encuesta_respuesta_detalle d
+         JOIN encuesta_respuestas r ON d.respuesta_id = r.id
+         WHERE r.encuesta_id = ?`,
+        [encuesta.id],
+      );
+    }
+
+    let escalaSum = 0;
+    let escalaCount = 0;
+
+    const preguntasReporte = preguntas.map((p) => {
+      const dets = detalles.filter((d) => d.pregunta_id === p.id);
+
+      if (p.tipo === "opcion_unica" || p.tipo === "opcion_multiple") {
+        const ops = opciones
+          .filter((o) => o.pregunta_id === p.id)
+          .map((o) => ({
+            texto: o.texto,
+            count: dets.filter((d) => d.opcion_id === o.id).length,
+          }));
+        return { id: p.id, texto: p.texto, tipo: p.tipo, opciones: ops };
+      }
+
+      if (p.tipo === "escala") {
+        const vals = dets
+          .map((d) => parseInt(d.valor))
+          .filter((v) => !isNaN(v));
+        const distribucion = [1, 2, 3, 4, 5].map((n) => ({
+          valor: n,
+          count: vals.filter((v) => v === n).length,
+        }));
+        const suma = vals.reduce((a, b) => a + b, 0);
+        escalaSum += suma;
+        escalaCount += vals.length;
+        return {
+          id: p.id,
+          texto: p.texto,
+          tipo: p.tipo,
+          distribucion,
+          promedio: vals.length ? Number((suma / vals.length).toFixed(2)) : 0,
+        };
+      }
+
+      // abierta
+      const respuestas = dets
+        .map((d) => d.valor)
+        .filter((v) => v && v.trim());
+      return { id: p.id, texto: p.texto, tipo: p.tipo, respuestas };
+    });
+
+    res.json({
+      encuesta,
+      totalRespuestas: tot.n,
+      inscritos: insc.n,
+      participacion: insc.n ? Math.round((tot.n / insc.n) * 100) : 0,
+      satisfaccion: escalaCount
+        ? Number((escalaSum / escalaCount).toFixed(2))
+        : null,
+      preguntas: preguntasReporte,
+    });
+  } catch (error) {
+    console.error("Error al obtener el reporte de la encuesta:", error);
+    res.status(500).json({ message: "Error al obtener el reporte" });
+  }
+};

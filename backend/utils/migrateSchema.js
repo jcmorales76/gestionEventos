@@ -32,6 +32,17 @@ async function migrarEsquema() {
       "INSERT IGNORE INTO configuraciones (clave, valor, descripcion) VALUES ('minutos_bloqueo','30','Minutos de bloqueo tras superar los intentos fallidos')",
     );
 
+    // Registro de descargas (certificados y materiales)
+    await pool.query(`CREATE TABLE IF NOT EXISTS descargas (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      tipo ENUM('certificado','material') NOT NULL,
+      referencia_id INT NOT NULL,
+      usuario_id INT NOT NULL,
+      fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_tipo_ref (tipo, referencia_id),
+      INDEX idx_usuario (usuario_id)
+    )`);
+
     // Tabla tipos_evento (+ semilla)
     await pool.query(`CREATE TABLE IF NOT EXISTS tipos_evento (
       id INT AUTO_INCREMENT PRIMARY KEY,

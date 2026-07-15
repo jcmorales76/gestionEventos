@@ -30,7 +30,22 @@ export default function MisCertificados() {
 
   const abrirPdf = (url) => window.open(`${url}`, "_blank");
 
+  // Registra la descarga para las estadísticas (no bloquea si falla)
+  const registrarDescarga = async (referenciaId) => {
+    if (!referenciaId) return;
+    try {
+      await fetch("/api/descargas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tipo: "certificado", referenciaId }),
+      });
+    } catch (error) {
+      /* silencioso */
+    }
+  };
+
   const handleDescargar = (item) => {
+    registrarDescarga(item.certificado_id);
     abrirPdf(item.url_pdf);
     toast.success(`📥 Descargando certificado de ${item.evento_nombre}`);
   };
@@ -45,6 +60,7 @@ export default function MisCertificados() {
       const data = await res.json();
       if (res.ok) {
         toast.success("🎓 Certificado generado");
+        registrarDescarga(data.certificadoId);
         abrirPdf(data.url);
         fetchItems();
       } else {
