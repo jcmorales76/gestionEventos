@@ -390,6 +390,30 @@ export default function Configuracion() {
               <span className="text-gray-600 text-sm">min</span>
             </div>
           </div>
+
+          {/* Cierre de sesión por inactividad */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <label className="font-semibold text-gray-900 block">
+                Cierre de sesión por inactividad
+              </label>
+              <p className="text-sm text-gray-500 mt-1">
+                Si el usuario no interactúa durante este tiempo, se cierra la
+                sesión y vuelve al login.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                defaultValue={config.minutos_inactividad?.valor || 30}
+                onBlur={(e) =>
+                  handleSave("minutos_inactividad", e.target.value)
+                }
+                className="input-field w-24 text-center"
+              />
+              <span className="text-gray-600 text-sm">min</span>
+            </div>
+          </div>
         </div>
       </div>
 

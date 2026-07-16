@@ -31,6 +31,9 @@ async function migrarEsquema() {
     await pool.query(
       "INSERT IGNORE INTO configuraciones (clave, valor, descripcion) VALUES ('minutos_bloqueo','30','Minutos de bloqueo tras superar los intentos fallidos')",
     );
+    await pool.query(
+      "INSERT IGNORE INTO configuraciones (clave, valor, descripcion) VALUES ('minutos_inactividad','30','Minutos de inactividad antes de cerrar la sesión automáticamente')",
+    );
 
     // Registro de descargas (certificados y materiales)
     await pool.query(`CREATE TABLE IF NOT EXISTS descargas (

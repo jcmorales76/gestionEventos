@@ -26,6 +26,7 @@ import Configuracion from "./pages/Configuracion";
 import Encuestas from "./pages/Encuestas";
 import CambiarPassword from "./pages/CambiarPassword";
 import UserMenu from "./components/UserMenu";
+import InactivityWatcher from "./components/InactivityWatcher";
 import MisCertificados from "./pages/MisCertificados"; // ✅ Portal Participante (AGREGADO)
 import ConfigurarPlantilla from "./pages/ConfigurarPlantilla";
 
@@ -273,6 +274,7 @@ function App() {
   return (
     <BrowserRouter>
       <Toaster position="top-right" />
+      <InactivityWatcher />
       <Routes>
         {/* Rutas Públicas */}
         <Route path="/login" element={<Login />} />

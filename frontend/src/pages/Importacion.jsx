@@ -44,6 +44,7 @@ export default function Importacion() {
       ).toLowerCase(),
       dni: norm(lower.dni || lower.documento),
       telefono: norm(lower.telefono || lower["teléfono"] || lower.celular),
+      empresa: norm(lower.empresa),
     };
   };
 
@@ -121,9 +122,11 @@ export default function Importacion() {
 
   const descargarPlantilla = () => {
     const csv =
-      "nombre,apellido,email,dni,telefono\n" +
-      "Juan,Pérez,juan.perez@email.com,12345678,999888777\n";
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      "nombre,apellido,email,dni,telefono,empresa\r\n" +
+      "Juan,Pérez,juan.perez@email.com,12345678,999888777,Caja Arequipa\r\n";
+    const blob = new Blob(["﻿" + csv], {
+      type: "text/csv;charset=utf-8;",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -230,7 +233,7 @@ export default function Importacion() {
                 Formatos soportados: .csv, .xlsx, .xls
               </p>
               <p className="text-xs text-gray-400 mt-2">
-                Columnas requeridas: nombre, apellido, email, dni, telefono
+                Columnas: nombre, apellido, email, dni, telefono, empresa
               </p>
             </label>
           </div>
@@ -282,6 +285,7 @@ export default function Importacion() {
                     <th className="table-th">Email</th>
                     <th className="table-th">DNI</th>
                     <th className="table-th">Teléfono</th>
+                    <th className="table-th">Empresa</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -298,6 +302,7 @@ export default function Importacion() {
                         <td className="table-td">{row.email || "—"}</td>
                         <td className="table-td">{row.dni || "—"}</td>
                         <td className="table-td">{row.telefono || "—"}</td>
+                        <td className="table-td">{row.empresa || "—"}</td>
                       </tr>
                     );
                   })}

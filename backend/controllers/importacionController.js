@@ -55,6 +55,7 @@ exports.importarParticipantes = async (req, res) => {
       const apellido = (p.apellido || "").toString().trim();
       const dni = (p.dni || "").toString().trim();
       const telefono = (p.telefono || "").toString().trim();
+      const empresa = (p.empresa || "").toString().trim();
 
       if (!email || !nombre) {
         resumen.errores.push(`Fila ${fila}: falta nombre o email`);
@@ -79,8 +80,8 @@ exports.importarParticipantes = async (req, res) => {
           tempPassword = dni || generarPasswordTemporal();
           const hash = await hashPassword(tempPassword);
           const [ins] = await pool.query(
-            'INSERT INTO usuarios (nombre, apellido, email, password, rol, dni, telefono, estado, password_changed_at) VALUES (?, ?, ?, ?, "participante", ?, ?, "Activo", ?)',
-            [nombre, apellido, email, hash, dni, telefono, FORZAR_CAMBIO],
+            'INSERT INTO usuarios (nombre, apellido, email, password, rol, dni, telefono, estado, empresa, password_changed_at) VALUES (?, ?, ?, ?, "participante", ?, ?, "Activo", ?, ?)',
+            [nombre, apellido, email, hash, dni, telefono, empresa || null, FORZAR_CAMBIO],
           );
           userId = ins.insertId;
           esNuevo = true;

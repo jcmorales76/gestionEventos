@@ -66,9 +66,31 @@ exports.getReportes = async (req, res) => {
 
     const [inscritosPorEvento] = await pool.query(
       `SELECT e.nombre, e.tipo, e.fecha_inicio, e.capacidad,
-              (SELECT COUNT(*) FROM inscripciones i WHERE i.evento_id = e.id) AS inscritos
+              (SELECT COUNT(*) FROM inscripciones i WHERE i.evento_id = e.id) AS inscritos,
+              (SELECT COUNT(DISTINCT u.empresa)
+                 FROM inscripciones i2
+                 JOIN usuarios u ON i2.usuario_id = u.id
+                WHERE i2.evento_id = e.id
+                  AND u.empresa IS NOT NULL AND u.empresa <> '') AS empresas
        FROM eventos e
        ORDER BY inscritos DESC LIMIT 10`,
+    );
+
+    // Empresas participantes (global) y ranking
+    const [[empresasTotal]] = await pool.query(
+      `SELECT COUNT(DISTINCT u.empresa) AS n
+       FROM inscripciones i
+       JOIN usuarios u ON i.usuario_id = u.id
+       WHERE u.empresa IS NOT NULL AND u.empresa <> ''`,
+    );
+    const [topEmpresas] = await pool.query(
+      `SELECT u.empresa AS name, COUNT(*) AS value
+       FROM inscripciones i
+       JOIN usuarios u ON i.usuario_id = u.id
+       WHERE u.empresa IS NOT NULL AND u.empresa <> ''
+       GROUP BY u.empresa
+       ORDER BY value DESC
+       LIMIT 10`,
     );
 
     const [eventosPorTipo] = await pool.query(
@@ -131,7 +153,9 @@ exports.getReportes = async (req, res) => {
         certificadosDescargados: certDescPersonas.n,
         materialesDescargas: matDescTotal.n,
         materialesDescargadosPersonas: matDescPersonas.n,
+        empresasParticipantes: empresasTotal.n,
       },
+      topEmpresas,
       inscritosPorEvento,
       eventosPorTipo,
       tendencia: tendencia.reverse(),

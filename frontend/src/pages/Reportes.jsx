@@ -73,7 +73,7 @@ export default function Reportes() {
       </div>
 
       {/* Resumen */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <ResumenCard
           label="Total Inscritos"
           value={data.resumen.totalInscritos}
@@ -103,6 +103,12 @@ export default function Reportes() {
           value={data.resumen.materialesDescargas}
           icon="📂"
           color="bg-amber-100 text-amber-600"
+        />
+        <ResumenCard
+          label="Empresas participantes"
+          value={data.resumen.empresasParticipantes}
+          icon="🏢"
+          color="bg-cyan-100 text-cyan-600"
         />
       </div>
 
@@ -177,6 +183,35 @@ export default function Reportes() {
           )}
         </ChartCard>
 
+        <ChartCard title="Top Empresas por Inscritos">
+          {!data.topEmpresas || data.topEmpresas.length === 0 ? (
+            <Vacio />
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart
+                data={data.topEmpresas}
+                layout="vertical"
+                margin={{ left: 8, right: 16 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                <XAxis type="number" allowDecimals={false} fontSize={12} />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  width={120}
+                  tick={{ fontSize: 11 }}
+                />
+                <Tooltip />
+                <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                  {data.topEmpresas.map((e, i) => (
+                    <Cell key={i} fill={COLORES[i % COLORES.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </ChartCard>
+
         <ChartCard title="Estado de Certificados">
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
@@ -216,6 +251,7 @@ export default function Reportes() {
                 <th className="table-th">Tipo</th>
                 <th className="table-th">Fecha</th>
                 <th className="table-th">Inscritos</th>
+                <th className="table-th">Empresas</th>
                 <th className="table-th">% Ocupación</th>
               </tr>
             </thead>
@@ -232,6 +268,11 @@ export default function Reportes() {
                     <td className="table-td">{row.tipo}</td>
                     <td className="table-td">{fmtFecha(row.fecha_inicio)}</td>
                     <td className="table-td font-semibold">{row.inscritos}</td>
+                    <td className="table-td">
+                      <span className="inline-flex items-center gap-1 text-cyan-700">
+                        🏢 {row.empresas || 0}
+                      </span>
+                    </td>
                     <td className="table-td">
                       <div className="flex items-center gap-2">
                         <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">

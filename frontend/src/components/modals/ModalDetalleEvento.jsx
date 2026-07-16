@@ -159,6 +159,14 @@ export default function ModalDetalleEvento({ isOpen, onClose, evento, onEdit, on
               label="Capacidad"
               valor={`${inscritos.length}/${evento.capacidad || 0}`}
             />
+            <Campo
+              label="Empresas"
+              valor={`🏢 ${
+                new Set(
+                  inscritos.map((i) => (i.empresa || "").trim()).filter(Boolean),
+                ).size
+              }`}
+            />
             <div className="col-span-2">
               <Campo
                 label="Descripción"
