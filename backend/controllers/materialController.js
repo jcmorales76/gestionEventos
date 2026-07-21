@@ -2,6 +2,7 @@ const pool = require("../config/db");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const { registrarAuditoria } = require("../utils/auditoria");
 
 // Configuración de almacenamiento
 const storage = multer.diskStorage({
@@ -114,6 +115,13 @@ const uploadMaterial = async (req, res) => {
       ],
     );
 
+    await registrarAuditoria(req, {
+      accion: "subir",
+      modulo: "materiales",
+      entidad_id: result.insertId,
+      descripcion: `Subió el material "${materialData.nombre_original}" (evento ${materialData.evento_id})`,
+    });
+
     res.status(201).json({
       id: result.insertId,
       message: "Material subido exitosamente",
@@ -150,6 +158,13 @@ const deleteMaterial = async (req, res) => {
 
     // Eliminar de la base de datos
     await pool.query("DELETE FROM materiales WHERE id = ?", [id]);
+
+    await registrarAuditoria(req, {
+      accion: "eliminar",
+      modulo: "materiales",
+      entidad_id: Number(id) || null,
+      descripcion: `Eliminó el material "${material.nombre_original}"`,
+    });
 
     res.json({ message: "Material eliminado exitosamente" });
   } catch (error) {

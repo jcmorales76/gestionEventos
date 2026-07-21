@@ -21,6 +21,8 @@ import Materiales from "./pages/Materiales";
 import Certificados from "./pages/Certificados"; // ✅ Panel Admin
 import Usuarios from "./pages/Usuarios";
 import Reportes from "./pages/Reportes";
+import Finanzas from "./pages/Finanzas";
+import Auditoria from "./pages/Auditoria";
 import Importacion from "./pages/Importacion";
 import Configuracion from "./pages/Configuracion";
 import Encuestas from "./pages/Encuestas";
@@ -106,6 +108,7 @@ const PrivateLayout = () => {
       title: "Datos y Herramientas",
       items: [
         { path: "/reportes", label: "Reportes", icon: "📈" },
+        { path: "/finanzas", label: "Análisis de Ingresos", icon: "💰" },
         { path: "/importacion", label: "Importación Masiva", icon: "📥" },
       ],
     },
@@ -113,6 +116,7 @@ const PrivateLayout = () => {
       title: "Administración",
       items: [
         { path: "/usuarios", label: "Usuarios", icon: "👤" },
+        { path: "/auditoria", label: "Auditoría", icon: "🧾" },
         { path: "/configuracion", label: "Configuración", icon: "⚙️" },
       ],
     },
@@ -289,6 +293,8 @@ function App() {
           <Route path="/certificados" element={<Certificados />} /> // ✅ Admin
           <Route path="/usuarios" element={<Usuarios />} />
           <Route path="/reportes" element={<Reportes />} />
+          <Route path="/finanzas" element={<Finanzas />} />
+          <Route path="/auditoria" element={<Auditoria />} />
           <Route path="/importacion" element={<Importacion />} />
           <Route path="/configuracion" element={<Configuracion />} />
           <Route path="/encuestas" element={<Encuestas />} />

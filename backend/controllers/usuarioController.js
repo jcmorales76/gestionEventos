@@ -3,6 +3,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const { hashPassword } = require("../utils/security");
+const { registrarAuditoria } = require("../utils/auditoria");
 
 // ===== Subida de foto de perfil (avatar) =====
 const avatarStorage = multer.diskStorage({
@@ -36,6 +37,12 @@ exports.uploadFoto = async (req, res) => {
       fotoUrl,
       id,
     ]);
+    await registrarAuditoria(req, {
+      accion: "subir",
+      modulo: "usuarios",
+      entidad_id: Number(id) || null,
+      descripcion: `Subió foto de perfil del usuario ${id}`,
+    });
     res.json({ message: "Foto actualizada", foto_url: fotoUrl });
   } catch (error) {
     console.error("Error al subir foto:", error);
@@ -84,6 +91,13 @@ exports.createUsuario = async (req, res) => {
       ],
     );
 
+    await registrarAuditoria(req, {
+      accion: "crear",
+      modulo: "usuarios",
+      entidad_id: result.insertId,
+      descripcion: `Creó el usuario ${nombre} ${apellido} (${email}, ${rol || "admin"})`,
+    });
+
     res
       .status(201)
       .json({ id: result.insertId, message: "Usuario creado exitosamente" });
@@ -116,6 +130,13 @@ exports.updateUsuario = async (req, res) => {
       [nombre, apellido, email, rol, dni, telefono, estado, empresa || null, id],
     );
 
+    await registrarAuditoria(req, {
+      accion: "editar",
+      modulo: "usuarios",
+      entidad_id: Number(id) || null,
+      descripcion: `Editó el usuario ${nombre} ${apellido} (${email})`,
+    });
+
     res.json({ message: "Usuario actualizado exitosamente" });
   } catch (error) {
     console.error("Error al actualizar usuario:", error);
@@ -132,7 +153,19 @@ exports.updateUsuario = async (req, res) => {
 exports.deleteUsuario = async (req, res) => {
   try {
     const { id } = req.params;
+    const [[u]] = await pool.query(
+      "SELECT nombre, apellido, email FROM usuarios WHERE id=?",
+      [id],
+    );
     await pool.query("DELETE FROM usuarios WHERE id=?", [id]);
+    await registrarAuditoria(req, {
+      accion: "eliminar",
+      modulo: "usuarios",
+      entidad_id: Number(id) || null,
+      descripcion: u
+        ? `Eliminó el usuario ${u.nombre} ${u.apellido} (${u.email})`
+        : `Eliminó el usuario ${id}`,
+    });
     res.json({ message: "Usuario eliminado exitosamente" });
   } catch (error) {
     console.error("Error al eliminar usuario:", error);
@@ -148,6 +181,12 @@ exports.desbloquearUsuario = async (req, res) => {
       "UPDATE usuarios SET intentos_fallidos = 0, bloqueado_hasta = NULL WHERE id = ?",
       [id],
     );
+    await registrarAuditoria(req, {
+      accion: "desbloquear",
+      modulo: "usuarios",
+      entidad_id: Number(id) || null,
+      descripcion: `Desbloqueó la cuenta del usuario ${id}`,
+    });
     res.json({ message: "Cuenta desbloqueada" });
   } catch (error) {
     console.error("Error al desbloquear usuario:", error);
@@ -166,6 +205,13 @@ exports.resetPassword = async (req, res) => {
       "UPDATE usuarios SET password = ?, password_changed_at = NOW() WHERE id = ?",
       [hash, id],
     );
+
+    await registrarAuditoria(req, {
+      accion: "reset_password",
+      modulo: "usuarios",
+      entidad_id: Number(id) || null,
+      descripcion: `Reseteó la contraseña del usuario ${id}`,
+    });
 
     res.json({ message: "Contraseña reseteada exitosamente" });
   } catch (error) {

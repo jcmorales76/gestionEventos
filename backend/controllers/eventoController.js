@@ -1,4 +1,5 @@
 const pool = require("../config/db");
+const { registrarAuditoria } = require("../utils/auditoria");
 
 // Obtener todos los eventos
 exports.getEventos = async (req, res) => {
@@ -58,6 +59,13 @@ exports.createEvento = async (req, res) => {
       ],
     );
 
+    await registrarAuditoria(req, {
+      accion: "crear",
+      modulo: "eventos",
+      entidad_id: result.insertId,
+      descripcion: `Creó el evento "${nombre}"`,
+    });
+
     res.status(201).json({
       id: result.insertId,
       message: "Evento creado exitosamente",
@@ -111,6 +119,13 @@ exports.updateEvento = async (req, res) => {
       ],
     );
 
+    await registrarAuditoria(req, {
+      accion: "editar",
+      modulo: "eventos",
+      entidad_id: Number(id) || null,
+      descripcion: `Editó el evento "${nombre}"`,
+    });
+
     res.json({ message: "Evento actualizado exitosamente" });
   } catch (error) {
     console.error("Error al actualizar evento:", error);
@@ -122,7 +137,14 @@ exports.updateEvento = async (req, res) => {
 exports.deleteEvento = async (req, res) => {
   try {
     const { id } = req.params;
+    const [[ev]] = await pool.query("SELECT nombre FROM eventos WHERE id=?", [id]);
     await pool.query("DELETE FROM eventos WHERE id=?", [id]);
+    await registrarAuditoria(req, {
+      accion: "eliminar",
+      modulo: "eventos",
+      entidad_id: Number(id) || null,
+      descripcion: `Eliminó el evento "${ev?.nombre || id}"`,
+    });
     res.json({ message: "Evento eliminado exitosamente" });
   } catch (error) {
     console.error("Error al eliminar evento:", error);

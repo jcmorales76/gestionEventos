@@ -2,6 +2,7 @@ const pool = require("../config/db");
 const jwt = require("jsonwebtoken");
 const { hashPassword, verifyPassword, esHash } = require("../utils/security");
 const { SECRET } = require("../middleware/auth");
+const { registrarAuditoria } = require("../utils/auditoria");
 
 exports.login = async (req, res) => {
   try {
@@ -23,16 +24,36 @@ exports.login = async (req, res) => {
     const [rows] = await pool.query("SELECT * FROM usuarios WHERE email = ?", [
       email,
     ]);
-    if (rows.length === 0)
+    if (rows.length === 0) {
+      await registrarAuditoria(req, {
+        accion: "login_fallido",
+        modulo: "auth",
+        descripcion: `Login fallido: ${email} (usuario inexistente)`,
+      });
       return res.status(401).json({ message: "Credenciales incorrectas" });
+    }
 
     const user = rows[0];
+
+    const auditUser = {
+      usuario_id: user.id,
+      usuario_nombre:
+        [user.nombre, user.apellido].filter(Boolean).join(" ") || user.email,
+      rol: user.rol,
+    };
 
     // 2b. ¿Cuenta bloqueada por intentos fallidos?
     if (user.bloqueado_hasta && new Date(user.bloqueado_hasta) > new Date()) {
       const mins = Math.ceil(
         (new Date(user.bloqueado_hasta) - new Date()) / 60000,
       );
+      await registrarAuditoria(req, {
+        ...auditUser,
+        accion: "login_bloqueado",
+        modulo: "auth",
+        entidad_id: user.id,
+        descripcion: `Intento de acceso a cuenta bloqueada: ${user.email}`,
+      });
       return res.status(423).json({
         message: `Cuenta bloqueada por demasiados intentos. Intenta en ${mins} min o contacta al administrador.`,
       });
@@ -48,6 +69,13 @@ exports.login = async (req, res) => {
           "UPDATE usuarios SET intentos_fallidos = ?, bloqueado_hasta = ? WHERE id = ?",
           [intentos, hasta, user.id],
         );
+        await registrarAuditoria(req, {
+          ...auditUser,
+          accion: "cuenta_bloqueada",
+          modulo: "auth",
+          entidad_id: user.id,
+          descripcion: `Cuenta bloqueada ${minutosBloqueo} min tras ${maxIntentos} intentos fallidos: ${user.email}`,
+        });
         return res.status(423).json({
           message: `Cuenta bloqueada por ${minutosBloqueo} minutos tras ${maxIntentos} intentos fallidos.`,
         });
@@ -57,6 +85,13 @@ exports.login = async (req, res) => {
         [intentos, user.id],
       );
       const restantes = maxIntentos - intentos;
+      await registrarAuditoria(req, {
+        ...auditUser,
+        accion: "login_fallido",
+        modulo: "auth",
+        entidad_id: user.id,
+        descripcion: `Login fallido (${intentos}/${maxIntentos}): ${user.email}`,
+      });
       return res.status(401).json({
         message: `Credenciales incorrectas. Te queda(n) ${restantes} intento(s).`,
       });
@@ -97,6 +132,14 @@ exports.login = async (req, res) => {
     );
     const { password: _, ...userSafe } = user;
 
+    await registrarAuditoria(req, {
+      ...auditUser,
+      accion: "login",
+      modulo: "auth",
+      entidad_id: user.id,
+      descripcion: `Inició sesión: ${user.email}`,
+    });
+
     res.json({
       message: "Login exitoso",
       token,
@@ -130,6 +173,12 @@ exports.changePassword = async (req, res) => {
       "UPDATE usuarios SET password = ?, password_changed_at = NOW() WHERE id = ?",
       [hash, userId],
     );
+    await registrarAuditoria(req, {
+      accion: "cambio_password",
+      modulo: "auth",
+      entidad_id: Number(userId) || null,
+      descripcion: `Cambió su contraseña: ${rows[0].email}`,
+    });
     res.json({ message: "Contraseña actualizada exitosamente" });
   } catch (error) {
     console.error("Error al cambiar contraseña:", error);

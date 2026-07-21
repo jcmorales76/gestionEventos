@@ -9,6 +9,7 @@ const authController = require("./controllers/authController");
 const configController = require("./controllers/configController");
 const { migrarPasswordsPlanas } = require("./utils/migratePasswords");
 const { migrarEsquema } = require("./utils/migrateSchema");
+const { auditoriaAuto } = require("./utils/auditoria");
 
 const authRoutes = require("./routes/authRoutes");
 const eventoRoutes = require("./routes/eventoRoutes");
@@ -24,6 +25,8 @@ const encuestaRoutes = require("./routes/encuestaRoutes");
 const statsRoutes = require("./routes/statsRoutes");
 const tipoEventoRoutes = require("./routes/tipoEventoRoutes");
 const descargaRoutes = require("./routes/descargaRoutes");
+const finanzasRoutes = require("./routes/finanzasRoutes");
+const auditoriaRoutes = require("./routes/auditoriaRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -46,6 +49,9 @@ app.get("/api/config", configController.getConfiguracion); // nombre/logo del si
 // ===== A partir de aquí, TODO /api requiere token válido =====
 app.use("/api", auth);
 
+// Bitácora de auditoría: captura automática de mutaciones (tras autenticar).
+app.use("/api", auditoriaAuto);
+
 // ===== Rutas PROTEGIDAS =====
 app.use("/api/auth", authRoutes); // change-password (login ya resuelto arriba)
 app.use("/api/eventos", eventoRoutes);
@@ -62,6 +68,8 @@ app.use("/api/config", requireRole("admin"), configRoutes);
 app.use("/api/usuarios", requireRole("admin"), usuarioRoutes);
 app.use("/api/importacion", requireRole("admin"), importacionRoutes);
 app.use("/api/stats", requireRole("admin"), statsRoutes);
+app.use("/api/finanzas", requireRole("admin"), finanzasRoutes);
+app.use("/api/auditoria", requireRole("admin"), auditoriaRoutes);
 
 // ===== Frontend (build de React) si existe ./public =====
 const frontendDir = path.join(__dirname, "public");
